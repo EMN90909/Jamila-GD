@@ -1,4 +1,6 @@
+import { existsSync } from "node:fs";
 import { homedir } from "node:os";
+import { dirname, join } from "node:path";
 import {
 	checkManagedHubBuildMismatch,
 	createClineTelemetryServiceConfig,
@@ -28,6 +30,7 @@ import {
 import { createDesktopObservability } from "./observability";
 import { configurePluginBootstrap } from "./plugin-bootstrap";
 import { resolveWorkspaceRoot } from "./paths";
+import { linuxResourceCandidates } from "./remote-helper";
 import { startServer } from "./server";
 import { buildTelemetrySelfcheckReport } from "./telemetry-selfcheck";
 import { BunRuntime, SIDECAR_HOST, SIDECAR_MODE, SIDECAR_PORT } from "./types";
@@ -234,6 +237,29 @@ function runTelemetrySelfcheck(): void {
 	process.stdout.write(`${JSON.stringify(report)}\n`);
 }
 
+/**
+ * Points core at the sandbox runtime for "Only allow edits in project directory",
+ * which build-sidecar-bin stages into the bundle's bin/mxc resource.
+ */
+function configureProjectSandboxRuntime(): void {
+	if (process.env.CLINE_MXC_SDK_DIR) {
+		return;
+	}
+	const executableDirectory = dirname(process.execPath);
+	const runtimePath = join("mxc", "node_modules", "@microsoft", "mxc-sdk");
+	const resource = join("bin", runtimePath);
+	const runtime = [
+		// Windows installs resources next to the sidecar.
+		join(executableDirectory, resource),
+		// `tauri dev` runs the compiled sidecar from src-tauri/bin.
+		join(executableDirectory, runtimePath),
+		...linuxResourceCandidates(executableDirectory, resource),
+	].find(existsSync);
+	if (runtime) {
+		process.env.CLINE_MXC_SDK_DIR = runtime;
+	}
+}
+
 async function runEntrypoint(): Promise<void> {
 	// Before the daemon-sentinel claim: the selfcheck only inspects build-time
 	// config and must not consume the sentinel or start anything.
@@ -248,6 +274,7 @@ async function runEntrypoint(): Promise<void> {
 	configurePluginBootstrap();
 	// Before the Hub daemon and agent-spawned processes inherit this env.
 	ensureLoopbackProxyBypass();
+	configureProjectSandboxRuntime();
 	// Claim the Hub daemon sentinel here, not in the shared remote helper: its
 	// daemon import resolves to the dist build of @cline/core while this bundle
 	// resolves the source build, and a daemon from the other copy publishes a
