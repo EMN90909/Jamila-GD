@@ -45,6 +45,10 @@ import {
 import { nanoid } from "nanoid";
 import type { AiSdkTelemetryDecision } from "../services/langfuse-telemetry";
 import {
+	createStreamErrorTelemetry,
+	isTimeoutReason,
+} from "../services/stream-error-telemetry";
+import {
 	classifyProviderError,
 	isRetryableBeyondSdkRetries,
 } from "./error-classification";
@@ -718,6 +722,12 @@ function buildAiSdkRuntimeContext(
 			? { conversationId: metadata.conversationId }
 			: {}),
 		...(typeof metadata.runId === "string" ? { runId: metadata.runId } : {}),
+		...(typeof metadata.agentId === "string"
+			? { agentId: metadata.agentId }
+			: {}),
+		...(typeof metadata.modelRequestId === "string"
+			? { modelRequestId: metadata.modelRequestId }
+			: {}),
 		...(typeof metadata.iteration === "number"
 			? { iteration: metadata.iteration }
 			: {}),
@@ -1085,6 +1095,7 @@ function getNestedUsageValue(
  * mid-stream provider errors belong to the turn-level retry alone.
  */
 const MODEL_REQUEST_MAX_RETRIES = 5;
+const MODEL_STREAM_MAX_RETRIES = 3;
 
 type UsagePath = readonly [string] | readonly [string, string];
 
@@ -1449,6 +1460,14 @@ function extractGoogleThoughtMetadata(
  * `extractErrorMessage`.
  */
 interface CapturedStreamError {
+	error: unknown;
+	phase:
+		| "stream_callback"
+		| "stream_part"
+		| "stream_read"
+		| "result"
+		| "request_start"
+		| "timeout";
 	message: string;
 	errorClass: ProviderErrorClass;
 	/**
@@ -1456,9 +1475,9 @@ interface CapturedStreamError {
 	 * while the structured error is still in hand and forwarded as
 	 * `errorRetryable` on the `finish` event (the flattened message the agent
 	 * loop receives cannot carry it). Transient by the AI SDK's own typed
-	 * `isRetryable` flag, except that a `RetryError` is terminal: the SDK
-	 * already spent its request-start retries, and the turn-level retry must
-	 * not multiply them.
+	 * `isRetryable` flag, except that request-start RetryErrors and terminal
+	 * stream error parts have already spent the SDK's retry budget. The
+	 * turn-level retry must not multiply those attempts.
 	 */
 	retryable: boolean;
 	/**
@@ -1469,11 +1488,21 @@ interface CapturedStreamError {
 	reported?: boolean;
 }
 
-function captureStreamError(error: unknown): CapturedStreamError {
+function captureStreamError(
+	error: unknown,
+	phase: CapturedStreamError["phase"] = "stream_callback",
+): CapturedStreamError {
 	return {
+		error,
+		phase,
 		message: extractErrorMessage(error),
 		errorClass: classifyProviderError(error),
-		retryable: isRetryableBeyondSdkRetries(error),
+		// Error parts reaching the consumer have exhausted AI SDK stream recovery.
+		// Do not multiply its retry budget in the agent's whole-turn retry loop.
+		retryable:
+			phase !== "stream_callback" &&
+			phase !== "stream_part" &&
+			isRetryableBeyondSdkRetries(error),
 	};
 }
 
@@ -1484,6 +1513,7 @@ async function* emitAiSdkEvents(
 	pricingValue?: unknown,
 	capturedError?: { current: CapturedStreamError | undefined },
 	modelToolAdapters?: BuiltModelTools,
+	reportError?: (error: CapturedStreamError) => Promise<void>,
 ): AsyncIterable<AgentModelEvent> {
 	const emittedToolCallIds = new Set<string>();
 	let finishReason: unknown;
@@ -1849,12 +1879,18 @@ async function* emitAiSdkEvents(
 
 				if (part.type === "error") {
 					streamError =
-						capturedError?.current ?? captureStreamError(part.error);
+						capturedError?.current ??
+						captureStreamError(part.error, "stream_part");
 					break;
 				}
 
 				if (part.type === "abort") {
 					streamAborted = true;
+					if (isTimeoutReason(part.reason)) {
+						streamError =
+							capturedError?.current ??
+							captureStreamError(part.reason, "timeout");
+					}
 					break;
 				}
 			}
@@ -1866,7 +1902,8 @@ async function* emitAiSdkEvents(
 	} catch (error) {
 		// Prefer the real provider error from onError over the generic
 		// NoOutputGeneratedError the AI SDK throws when 0 steps are recorded.
-		streamError = capturedError?.current ?? captureStreamError(error);
+		streamError =
+			capturedError?.current ?? captureStreamError(error, "stream_read");
 	}
 
 	if (!streamError) {
@@ -1977,7 +2014,8 @@ async function* emitAiSdkEvents(
 			usageToEmit = await stream.usage;
 		} catch (error) {
 			if (!streamError) {
-				streamError = capturedError?.current ?? captureStreamError(error);
+				streamError =
+					capturedError?.current ?? captureStreamError(error, "result");
 			}
 			usageToEmit = finishUsage;
 			metadataToUse = finishProviderMetadata;
@@ -1993,6 +2031,8 @@ async function* emitAiSdkEvents(
 			usage: normalizeUsage(usageToEmit, metadataToUse, pricingValue, request),
 		};
 	}
+
+	if (streamError) await reportError?.(streamError);
 
 	yield {
 		type: "finish",
@@ -2134,6 +2174,69 @@ function createAiSdkProvider(
 			const capturedError: { current: CapturedStreamError | undefined } = {
 				current: undefined,
 			};
+			let recordTraceError: ((error: unknown) => Promise<void>) | undefined;
+			let getAiSdkCallId: (() => string | undefined) | undefined;
+			let reportedError: CapturedStreamError | undefined;
+			const reportError = async (
+				captured: CapturedStreamError,
+				operation = "provider.stream",
+			) => {
+				if (reportedError === captured) return;
+				// Explicit user/steering cancellation is not a provider failure.
+				if (
+					request.signal?.aborted &&
+					!isTimeoutReason(request.signal.reason) &&
+					!isTimeoutReason(captured.error)
+				)
+					return;
+				reportedError = captured;
+				const runtimeContext = buildAiSdkRuntimeContext(request, context);
+				const correlation = Object.fromEntries(
+					[
+						"runId",
+						"agentId",
+						"sessionId",
+						"conversationId",
+						"modelRequestId",
+						"iteration",
+					].flatMap((key) =>
+						runtimeContext[key] === undefined
+							? []
+							: [[key, runtimeContext[key]]],
+					),
+				);
+				if (log?.error) {
+					log.error("[ai-sdk] provider error", {
+						...correlation,
+						providerId: request.providerId,
+						error: captured.error,
+						severity: "error",
+					});
+				} else {
+					log?.log(`[ai-sdk] provider error: ${captured.message}`, {
+						providerId: request.providerId,
+						severity: "error",
+					});
+				}
+				captured.reported = captureSdkError(context.telemetry, {
+					component: "llms",
+					operation,
+					error: captured.error,
+					errorMessage: captured.message,
+					severity: "error",
+					handled: true,
+					context: {
+						...correlation,
+						aiSdkCallId: getAiSdkCallId?.(),
+						error_phase: captured.phase,
+						error_turn_retryable: captured.retryable,
+						providerId: request.providerId,
+						modelId: request.modelId,
+						providerKind: kind,
+					},
+				});
+				await recordTraceError?.(captured.error);
+			};
 			try {
 				const provider = await createProviderModule(
 					kind,
@@ -2261,10 +2364,12 @@ function createAiSdkProvider(
 					yield { type: "finish", reason: "stop" };
 					return;
 				}
-				const aiSdkTelemetry = await resolveGatewayAiSdkTelemetry(
-					config.providerId,
-					request,
+				const streamTelemetry = createStreamErrorTelemetry(
+					await resolveGatewayAiSdkTelemetry(config.providerId, request),
 				);
+				const aiSdkTelemetry = streamTelemetry.telemetry;
+				recordTraceError = streamTelemetry.recordError;
+				getAiSdkCallId = streamTelemetry.getCallId;
 				const externalToolExecutionDisabled =
 					providerDisablesExternalToolExecution(context);
 				const toolCallingDisabled =
@@ -2348,6 +2453,8 @@ function createAiSdkProvider(
 									tags: true,
 									conversationId: true,
 									runId: true,
+									agentId: true,
+									modelRequestId: true,
 									iteration: true,
 									providerId: true,
 									modelId: true,
@@ -2360,36 +2467,21 @@ function createAiSdkProvider(
 								? { stopWhen: stepCountIs(8) }
 								: {}),
 							...requestConfig,
+							streamRetries: MODEL_STREAM_MAX_RETRIES,
 							...(portableReasoning ? { reasoning: portableReasoning } : {}),
+							onLanguageModelCallStart: () => {
+								capturedError.current = undefined;
+							},
 							onError: ({ error: streamError }) => {
 								const captured = captureStreamError(streamError);
-								const msg = captured.message;
 								capturedError.current = captured;
-								if (log?.error) {
-									log.error("[ai-sdk] stream error", {
-										providerId: request.providerId,
-										error: streamError,
-										severity: "error",
-									});
-								} else if (log) {
-									log.log(`[ai-sdk] stream error: ${msg}`, {
-										providerId: request.providerId,
-										severity: "error",
-									});
-								}
-								captured.reported = captureSdkError(context.telemetry, {
-									component: "llms",
-									operation: "provider.stream",
-									error: streamError,
-									errorMessage: msg,
-									severity: "error",
-									handled: true,
-									context: {
-										providerId: request.providerId,
-										modelId: request.modelId,
-										providerKind: kind,
-									},
-								});
+								streamTelemetry.captureError(streamError);
+							},
+							onAbort: async ({ reason }) => {
+								if (!isTimeoutReason(reason)) return;
+								const captured = captureStreamError(reason, "timeout");
+								capturedError.current = captured;
+								await reportError(captured);
 							},
 						}) as unknown as AiSdkStreamResult,
 				);
@@ -2407,45 +2499,22 @@ function createAiSdkProvider(
 					context.model.metadata?.pricing,
 					capturedError,
 					modelToolAdapters,
+					reportError,
 				);
 			} catch (error) {
 				suppressDanglingStreamPromises(stream);
 				// Prefer the real provider error captured in onError over the generic
 				// NoOutputGeneratedError that the AI SDK throws when 0 steps are recorded.
-				const captured = capturedError.current ?? captureStreamError(error);
-				const msg = captured.message;
-				if (log?.error) {
-					log.error("[ai-sdk] provider error", {
-						providerId: request.providerId,
-						error,
-						severity: "error",
-					});
-				} else if (log) {
-					log.log(`[ai-sdk] provider error: ${msg}`, {
-						providerId: request.providerId,
-						severity: "error",
-					});
-				}
-				const reported = captureSdkError(context.telemetry, {
-					component: "llms",
-					operation: "provider.create_or_stream",
-					error,
-					errorMessage: msg,
-					severity: "error",
-					handled: true,
-					context: {
-						providerId: request.providerId,
-						modelId: request.modelId,
-						providerKind: kind,
-					},
-				});
+				const captured =
+					capturedError.current ?? captureStreamError(error, "request_start");
+				await reportError(captured, "provider.create_or_stream");
 				yield {
 					type: "finish",
 					reason: "error",
-					error: msg,
+					error: captured.message,
 					errorClass: captured.errorClass,
 					errorRetryable: captured.retryable,
-					errorReported: reported || captured.reported,
+					errorReported: captured.reported,
 				};
 			}
 		},

@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { markOtlpTraceRelayProvider } from "@cline/shared";
-import { context, trace } from "@opentelemetry/api";
+import { context, SpanStatusCode, trace } from "@opentelemetry/api";
 import {
 	InMemorySpanExporter,
 	NodeTracerProvider,
@@ -16,6 +16,7 @@ import {
 	resetLangfuseTelemetryForTests,
 	resolveAiSdkTelemetry,
 } from "./langfuse-telemetry";
+import { createStreamErrorTelemetry } from "./stream-error-telemetry";
 
 const { settingsPath, directExporters } = vi.hoisted(() => ({
 	settingsPath: { current: "" },
@@ -74,6 +75,224 @@ afterEach(async () => {
 	context.disable();
 	resetLangfuseTelemetryForTests();
 	vi.unstubAllEnvs();
+});
+
+it.each([
+	["relay", "error part"],
+	["relay", "reader rejection"],
+	["direct", "error part"],
+	["direct", "reader rejection"],
+	["relay", "timeout abort"],
+	["relay", "caller abort"],
+	["direct", "timeout abort"],
+	["direct", "caller abort"],
+])("exports %s %s with the correct Langfuse observation status", async (route, failure) => {
+	if (route === "direct") {
+		trace.disable();
+		context.disable();
+		vi.stubEnv("LANGFUSE_BASE_URL", "https://langfuse.example");
+		vi.stubEnv("LANGFUSE_PUBLIC_KEY", "public-key");
+		vi.stubEnv("LANGFUSE_SECRET_KEY", "secret-key");
+	}
+	const error = failure.endsWith("abort")
+		? new DOMException(
+				"test abort",
+				failure === "timeout abort" ? "TimeoutError" : "AbortError",
+			)
+		: Object.assign(
+				new Error("The socket connection was closed unexpectedly"),
+				{
+					code: "ConnectionClosed",
+				},
+			);
+	const { telemetry, recordError } = createStreamErrorTelemetry(
+		await resolveAiSdkTelemetry("cline", "socket-test"),
+	);
+	let index = 0;
+	const abortController = new AbortController();
+	const result = streamText({
+		model: new MockLanguageModelV4({
+			provider: "cline",
+			modelId: "socket-test",
+			doStream: async () => ({
+				stream: new ReadableStream({
+					pull(controller) {
+						switch (index++) {
+							case 0:
+								controller.enqueue({ type: "stream-start", warnings: [] });
+								break;
+							case 1:
+								controller.enqueue({ type: "text-start", id: "text" });
+								break;
+							case 2:
+								controller.enqueue({
+									type: "text-delta",
+									id: "text",
+									delta: "partial output",
+								});
+								break;
+							default:
+								if (failure.endsWith("abort")) {
+									abortController.abort(error);
+									controller.enqueue({
+										type: "text-delta",
+										id: "text",
+										delta: "discarded",
+									});
+								} else if (failure === "reader rejection")
+									controller.error(error);
+								else {
+									controller.enqueue({ type: "error", error });
+									controller.close();
+								}
+						}
+					},
+				}),
+			}),
+		}),
+		prompt: "test",
+		abortSignal: abortController.signal,
+		telemetry,
+		onError: ({ error }) => recordError(error),
+	});
+	// A failed stream also rejects its result promises.
+	for (const promise of [
+		result.usage,
+		result.totalUsage,
+		result.finishReason,
+		result.steps,
+		result.text,
+		result.response,
+	]) {
+		promise.catch(() => {});
+	}
+	try {
+		for await (const part of result.fullStream) {
+			if (part.type === "error") await recordError(part.error);
+		}
+	} catch (error) {
+		await recordError(error);
+	}
+	await provider.forceFlush();
+	const errorExporter = route === "direct" ? directExporters[0] : exporter;
+	expect(errorExporter).toBeDefined();
+	const spans = errorExporter?.getFinishedSpans() ?? [];
+	expect(spans.length).toBeGreaterThan(0);
+	expect(
+		spans.every(
+			(span) =>
+				span.status.code ===
+				(failure === "caller abort"
+					? SpanStatusCode.UNSET
+					: SpanStatusCode.ERROR),
+		),
+	).toBe(true);
+	expect(
+		spans.some((span) =>
+			span.events.some(
+				(event) =>
+					event.name === "exception" &&
+					event.attributes?.["exception.message"] === error.message,
+			),
+		),
+	).toBe(failure !== "caller abort");
+	const count = spans.length;
+	await recordError(error);
+	await provider.forceFlush();
+	expect(errorExporter?.getFinishedSpans()).toHaveLength(count);
+});
+
+it.each([
+	2, 4,
+])("handles %s failed stream attempts without marking a recovered operation as failed", async (failures) => {
+	let calls = 0;
+	const streamTelemetry = createStreamErrorTelemetry(
+		await resolveAiSdkTelemetry("cline", "retry-test"),
+	);
+	const result = streamText({
+		model: new MockLanguageModelV4({
+			provider: "cline",
+			modelId: "retry-test",
+			doStream: async () => {
+				const fail = calls++ < failures;
+				return {
+					stream: new ReadableStream({
+						start(controller) {
+							controller.enqueue({ type: "stream-start", warnings: [] });
+							if (fail)
+								controller.enqueue({
+									type: "error",
+									error: {
+										message: "upstream timeout",
+										type: "timeout_error",
+										code: "504",
+									},
+								});
+							else {
+								controller.enqueue({ type: "text-start", id: "text" });
+								controller.enqueue({
+									type: "text-delta",
+									id: "text",
+									delta: "recovered",
+								});
+								controller.enqueue({ type: "text-end", id: "text" });
+							}
+							controller.enqueue({
+								type: "finish",
+								finishReason: {
+									unified: fail ? "error" : "stop",
+									raw: undefined,
+								},
+								usage: {
+									inputTokens: {
+										total: 1,
+										noCache: 1,
+										cacheRead: 0,
+										cacheWrite: 0,
+									},
+									outputTokens: { total: 1, text: 1, reasoning: 0 },
+								},
+							});
+							controller.close();
+						},
+					}),
+				};
+			},
+		}),
+		prompt: "test",
+		streamRetries: 3,
+		maxRetries: 0,
+		telemetry: streamTelemetry.telemetry,
+		onError: ({ error }) => {
+			streamTelemetry.captureError(error);
+		},
+	});
+	for (const promise of [
+		result.usage,
+		result.totalUsage,
+		result.finishReason,
+		result.steps,
+		result.text,
+		result.response,
+	])
+		promise.catch(() => {});
+	const errors: unknown[] = [];
+	for await (const part of result.fullStream) {
+		if (part.type === "error") {
+			errors.push(part.error);
+			await streamTelemetry.recordError(part.error);
+		}
+	}
+	await provider.forceFlush();
+	expect(calls).toBe(failures === 2 ? 3 : 4);
+	expect(errors).toHaveLength(failures === 2 ? 0 : 1);
+	const roots = exporter
+		.getFinishedSpans()
+		.filter((span) => !span.parentSpanContext);
+	expect(roots).toHaveLength(1);
+	expect(roots[0]?.status.code).toBe(
+		failures === 2 ? SpanStatusCode.UNSET : SpanStatusCode.ERROR,
+	);
 });
 
 async function runStream(
