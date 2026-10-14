@@ -174,6 +174,30 @@ teardown branch a stop routes through. Each session emits at most one
 `task.completed`. See `DOC.md` for the event payload and `source`
 field.
 
+### Shared CLI launcher and plugin resources
+
+Script-based hosts call `setHubDaemonLauncher({ command: cliPath })` before
+creating their runtime host. Detached Hub launches then use that installed CLI
+and its daemon marker rather than re-executing the backend JavaScript. Discovery
+still determines whether an existing Hub is compatible, so desktop and terminal
+clients share the same CLI-managed daemon regardless of which client starts it.
+The desktop backend uses `cline hub ensure` before connecting. Quitting desktop
+stops its backend, while the shared Hub retains ownership of its sessions.
+
+Compiled CLI builds embed a bundled plugin sandbox bootstrap, the jiti transform,
+and public SDK runtime modules. On first plugin use, core materializes those files
+under `~/.cline/runtime/plugin-sandbox/<content-hash>`. Atomic file writes and a
+content-specific directory keep concurrent SDK builds isolated. The sandbox
+re-executes its compiled host with `BUN_BE_BUN=1`; its bootstrap consumes that flag
+before plugin code can spawn children. This works for installed and SSH-uploaded
+CLI binaries without a Node installation or package-manager wrapper. An explicit
+`CLINE_PLUGIN_BOOTSTRAP_PATH` overrides embedded resources for other hosts.
+
+SSH staging takes a temporary immutable copy of the selected executable before
+hashing and uploading it, so a concurrent shared CLI upgrade cannot publish new
+bytes under an old content hash. Linux x64 SSH targets require a baseline runtime;
+matching the local architecture alone does not establish CPU compatibility.
+
 ### Hub-Backed Runtime
 
 1. Host constructs a `RuntimeHost` through `@cline/core`.
@@ -770,8 +794,9 @@ imports anything but Node builtins, because hosts ship it without
 
 Hosts find the bootstrap beside their bundle (`plugin-sandbox-bootstrap.js`,
 or `.mjs` for the CommonJS VS Code bundle), beside the CLI binary
-(`extensions/`), or through `CLINE_PLUGIN_BOOTSTRAP_PATH` (the desktop sidecar
-sets it to the copy shipped as a Tauri resource). A host that ships none
+(`extensions/`), through `CLINE_PLUGIN_BOOTSTRAP_PATH`, or from the matching
+plugin runtime embedded in the compiled CLI. The desktop runs its Hub through
+that CLI, so it uses the embedded runtime too. A host that ships none
 cannot start workers, and `resolvePluginExecutionMode` falls back to
 `in_process`.
 

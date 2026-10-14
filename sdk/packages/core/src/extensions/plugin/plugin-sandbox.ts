@@ -18,6 +18,7 @@ import type {
 import { SubprocessSandbox } from "../../runtime/tools/subprocess-sandbox";
 import { MAX_NODE_TIMER_DELAY_MS } from "../../runtime/tools/subprocess-sandbox-lifecycle";
 import { WorkerSandbox } from "../../runtime/tools/worker-sandbox";
+import { resolveEmbeddedPluginBootstrap } from "./embedded-plugin-runtime";
 import type { PluginLoadDiagnostics } from "./plugin-load-report";
 import type { PluginTargeting } from "./plugin-targeting";
 
@@ -250,14 +251,21 @@ function resolveBootstrapFromExecutable(): string | undefined {
  * layout. Those fallbacks exist only for compiled hosts
  * (`bun build --compile`) where import.meta points inside the binary and no
  * sibling file exists on real disk.
+ *
+ * An explicit candidate (the host's env override) is deliberate and wins
+ * over all discovery.
  */
 export function selectBootstrapCandidate(options: {
+	explicitCandidate?: string;
 	siblingCandidates: string[];
 	sourceBootstrapPath: string;
 	installedCandidates: Array<string | undefined>;
 	exists?: (path: string) => boolean;
 }): { file: string } | { sourcePath: string } {
 	const exists = options.exists ?? existsSync;
+	if (options.explicitCandidate && exists(options.explicitCandidate)) {
+		return { file: options.explicitCandidate };
+	}
 	for (const candidate of options.siblingCandidates) {
 		if (exists(candidate)) return { file: candidate };
 	}
@@ -292,6 +300,7 @@ function resolveBootstrap():
 		return { file: configured };
 	}
 	const selected = selectBootstrapCandidate({
+		explicitCandidate: resolveEmbeddedPluginBootstrap(),
 		siblingCandidates: [
 			join(dir, "plugin-sandbox-bootstrap.js"),
 			// Hosts whose package.json is not `"type": "module"` (the VS Code
