@@ -2,7 +2,6 @@ import { homedir } from "node:os";
 import {
 	checkManagedHubBuildMismatch,
 	createClineTelemetryServiceConfig,
-	ensureLoginShellPath,
 	readGlobalSettings,
 	setHomeDirIfUnset,
 	setModelToolEnabledGlobally,
@@ -16,7 +15,7 @@ import {
 	setClineClientIdentity,
 } from "@cline/shared";
 import { prewarmWorkspaceMetadata } from "./chat-session";
-import { adoptDesktopCliRuntime, ensureHubWithDesktopCli } from "./cli-runtime";
+import { adoptDesktopCliRuntime } from "./cli-runtime";
 import { DESKTOP_CLIENT_CONTEXT } from "./client-context";
 import { configureConnectorCliLaunch } from "./connectors";
 import {
@@ -26,8 +25,8 @@ import {
 	initializeSessionManager,
 } from "./context";
 import { createDesktopObservability } from "./observability";
-import { configurePluginBootstrap } from "./plugin-bootstrap";
 import { resolveWorkspaceRoot } from "./paths";
+import { configurePluginBootstrap } from "./plugin-bootstrap";
 import { startServer } from "./server";
 import { BunRuntime, SIDECAR_HOST, SIDECAR_MODE, SIDECAR_PORT } from "./types";
 
@@ -53,17 +52,10 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
 	});
 }
 
-async function main(desktopCliPath?: string) {
+async function main() {
 	if (!BunRuntime) {
 		throw new Error("sidecar must be run with Bun");
 	}
-
-	// When launched from Finder/the Dock the app inherits launchd's minimal
-	// PATH, so agent-spawned processes can't find shell-profile-installed
-	// tools like `gh`. Kick resolution off first so it overlaps the rest of
-	// startup, but await it before the session manager exists — that's what
-	// spawns children (agent sessions, MCP servers, scheduled runs).
-	const shellPathPromise = ensureLoginShellPath();
 
 	const workspaceRoot = resolveWorkspaceRoot(process.cwd());
 	setHomeDirIfUnset(homedir());
@@ -91,23 +83,6 @@ async function main(desktopCliPath?: string) {
 	}
 
 	prewarmWorkspaceMetadata(workspaceRoot);
-	observability.logger.log(
-		"Login shell PATH resolution",
-		await shellPathPromise,
-	);
-	// The packaged app hands Hub startup to its bundled CLI: it reuses a
-	// compatible healthy Hub or starts one, and the session manager attaches.
-	// Afterwards the PATH above is set, so a new Hub inherits it. On failure
-	// the session manager still starts the Hub through the same CLI launcher.
-	if (desktopCliPath) {
-		try {
-			const hub = await ensureHubWithDesktopCli(desktopCliPath, workspaceRoot);
-			observability.logger.log("Hub ready via Cline CLI", { url: hub.url });
-		} catch (error) {
-			observability.logger.error?.("Cline CLI hub ensure failed", { error });
-		}
-	}
-	await initializeSessionManager(ctx);
 
 	let shuttingDown = false;
 	let handlingFatalError = false;
@@ -188,8 +163,8 @@ async function main(desktopCliPath?: string) {
 	// The watcher's first check only runs after its interval, but a mismatch
 	// that already exists at startup - an older Hub this app attached to
 	// because it is still serving other clients' sessions - must prompt
-	// before the user starts working, not half a minute in. Session-manager
-	// init has already settled the hub state, so check once right away. The
+	// before the user starts working, not half a minute in. The session manager
+	// may still be starting; check once now and keep watching. The
 	// broadcast reaches webviews that are already connected; the replay in
 	// createWebSocketHandler covers ones that connect later. Skipped when
 	// CLINE_HUB_PORT pins an explicit endpoint, matching the watcher: such
@@ -228,6 +203,8 @@ async function main(desktopCliPath?: string) {
 			mode: SIDECAR_MODE,
 		})}\n`,
 	);
+	// The webview can now display startup progress and recover from failures.
+	void initializeSessionManager(ctx);
 }
 
 /**
@@ -251,7 +228,7 @@ async function runEntrypoint(): Promise<void> {
 		runTelemetrySelfcheck();
 		return;
 	}
-	const { cliPath } = adoptDesktopCliRuntime();
+	adoptDesktopCliRuntime();
 	setClineClientIdentity(DESKTOP_CLIENT_CONTEXT);
 
 	disableCurrentDirectoryExecutableSearch();
@@ -259,7 +236,7 @@ async function runEntrypoint(): Promise<void> {
 	configurePluginBootstrap();
 	// Before the Hub daemon and agent-spawned processes inherit this env.
 	ensureLoopbackProxyBypass();
-	await main(cliPath);
+	await main();
 }
 
 runEntrypoint().catch(async (error) => {

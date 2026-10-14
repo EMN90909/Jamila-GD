@@ -5,6 +5,7 @@ import { CheckIcon, ChevronRightIcon, CircleIcon } from "lucide-react";
 import type * as React from "react";
 
 import { cn } from "@/lib/utils";
+import { OverlayActivity } from "./overlay-visibility";
 
 function DropdownMenu({
 	...props
@@ -16,7 +17,12 @@ function DropdownMenuPortal({
 	...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Portal>) {
 	return (
-		<DropdownMenuPrimitive.Portal data-slot="dropdown-menu-portal" {...props} />
+		<OverlayActivity>
+			<DropdownMenuPrimitive.Portal
+				data-slot="dropdown-menu-portal"
+				{...props}
+			/>
+		</OverlayActivity>
 	);
 }
 
@@ -37,7 +43,7 @@ function DropdownMenuContent({
 	...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Content>) {
 	return (
-		<DropdownMenuPrimitive.Portal>
+		<DropdownMenuPortal>
 			<DropdownMenuPrimitive.Content
 				data-slot="dropdown-menu-content"
 				sideOffset={sideOffset}
@@ -47,7 +53,7 @@ function DropdownMenuContent({
 				)}
 				{...props}
 			/>
-		</DropdownMenuPrimitive.Portal>
+		</DropdownMenuPortal>
 	);
 }
 

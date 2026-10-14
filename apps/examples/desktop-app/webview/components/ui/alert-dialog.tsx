@@ -4,6 +4,7 @@ import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
 import type * as React from "react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { OverlayActivity } from "./overlay-visibility";
 
 function AlertDialog({
 	...props
@@ -23,7 +24,9 @@ function AlertDialogPortal({
 	...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Portal>) {
 	return (
-		<AlertDialogPrimitive.Portal data-slot="alert-dialog-portal" {...props} />
+		<OverlayActivity>
+			<AlertDialogPrimitive.Portal data-slot="alert-dialog-portal" {...props} />
+		</OverlayActivity>
 	);
 }
 
