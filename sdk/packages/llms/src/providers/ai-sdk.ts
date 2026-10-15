@@ -24,7 +24,6 @@ import {
 	GeneratedMediaSchema,
 	generatedMediaModalityFromMediaType,
 	modelProducesImages,
-	modelSupportsToolCalling,
 	parseJsonStream,
 	sanitizeSurrogates,
 	usesImageGenerationOperation,
@@ -54,6 +53,7 @@ import {
 	isAnthropicCompatibleModel,
 	isCerebrasProvider,
 	modelSupportsImageInput,
+	modelSupportsNativeToolCalling,
 	resolveModelFamily,
 } from "./model-facts";
 import {
@@ -2125,11 +2125,11 @@ function createAiSdkProvider(
 	defaultKind: ProviderModuleKind,
 ): GatewayProviderFactory {
 	return async (config) => ({
-		async *stream(request, context) {
+		async *stream(request, initialContext) {
 			// Multi-protocol HTTP gateways declare model adapters in models.dev.
 			// Keep native and local CLI transports authoritative for their models.
-			const kind = resolveModelProviderKind(defaultKind, context);
-			const log = context.logger;
+			const kind = resolveModelProviderKind(defaultKind, initialContext);
+			const log = initialContext.logger;
 			let stream: AiSdkStreamResult | undefined;
 			const capturedError: { current: CapturedStreamError | undefined } = {
 				current: undefined,
@@ -2142,11 +2142,21 @@ function createAiSdkProvider(
 						fetch: wrapFetchForStickySession(
 							wrapFetchForProviderRequestCapture(config.fetch, request),
 							request,
-							context,
+							initialContext,
 						),
 					},
-					context,
+					initialContext,
 				);
+				const context = provider.resolveSelectedModel
+					? {
+							...initialContext,
+							model: await provider.resolveSelectedModel(
+								initialContext.model,
+								request,
+								request.signal ?? initialContext.signal,
+							),
+						}
+					: initialContext;
 				const composedProviderOptions = composeAiSdkProviderOptions(
 					request,
 					context,
@@ -2269,7 +2279,7 @@ function createAiSdkProvider(
 					providerDisablesExternalToolExecution(context);
 				const toolCallingDisabled =
 					externalToolExecutionDisabled ||
-					!modelSupportsToolCalling(context.model);
+					!modelSupportsNativeToolCalling(context);
 				const runtimeTools = toolCallingDisabled
 					? undefined
 					: toAiSdkTools(request);
@@ -2426,7 +2436,7 @@ function createAiSdkProvider(
 						severity: "error",
 					});
 				}
-				const reported = captureSdkError(context.telemetry, {
+				const reported = captureSdkError(initialContext.telemetry, {
 					component: "llms",
 					operation: "provider.create_or_stream",
 					error,
