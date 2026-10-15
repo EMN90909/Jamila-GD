@@ -1,0 +1,33 @@
+name: Apply Jamila rebrand
+
+on:
+  push:
+    branches:
+      - Main
+    paths:
+      - .github/workflows/apply-jamila-rebrand.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  rebrand:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Main
+        uses: actions/checkout@v4
+        with:
+          ref: Main
+          persist-credentials: true
+      - name: Run repository-wide rename
+        run: python3 scripts/rebrand_to_jam.py --apply
+      - name: Commit and push all renames
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "refactor: rename Cline to Jamila and cline paths to jam"
+            git push origin HEAD:Main
+          fi
