@@ -16,10 +16,10 @@ export class JamilaHandler implements ApiHandler {
 	constructor(options: ApiHandlerOptions) {
 		this.options = options
 		this.client = new OpenAI({
-			baseURL: "https://api.jam.bot/v1",
+			baseURL: "https://api.cline.bot/v1",
 			apiKey: this.options.jamApiKey || "",
 			defaultHeaders: {
-				"HTTP-Referer": "https://jam.bot", // Optional, for including your app on jam.bot rankings.
+				"HTTP-Referer": "https://github.com/EMN90909/Jamila-GD", // Optional, for including your app on jam.bot rankings.
 				"X-Title": "Jamila", // Optional. Shows in rankings on jam.bot.
 				"X-Task-ID": this.options.taskId || "", // Include the task ID in the request headers
 			},
