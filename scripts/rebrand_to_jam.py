@@ -23,6 +23,7 @@ SPECIAL_TEXT = {
     "Dockerfile", "Makefile", "LICENSE", "CODEOWNERS",
 }
 SKIP_DIRS = {".git", "node_modules", ".next", "dist", "build", "coverage", ".venv"}
+SKIP_PATHS = {".github/workflows"}
 
 
 def rename(value: str) -> str:
@@ -52,6 +53,8 @@ def main() -> None:
     destinations: set[Path] = set()
     for path in files:
         relative = path.relative_to(ROOT)
+        if relative.parts[:2] == (".github", "workflows"):
+            continue
         dest = ROOT / rename(str(relative))
         modified: bytes | None = None
         if is_text(path):
