@@ -3,7 +3,7 @@ import { CheckpointsServiceClient } from "@/services/grpc-client"
 import { flip, offset, shift, useFloating } from "@floating-ui/react"
 import { CheckpointRestoreRequest } from "@shared/proto/checkpoints"
 import { Int64Request } from "@shared/proto/common"
-import { ClineCheckpointRestore } from "@shared/WebviewMessage"
+import { JamilaCheckpointRestore } from "@shared/WebviewMessage"
 import { VSCodeButton } from "@vscode/webview-ui-toolkit/react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
@@ -98,7 +98,7 @@ export const CheckmarkControl = ({ messageTs, isCheckpointCheckedOut }: Checkmar
 	const handleRestoreTask = async () => {
 		setRestoreTaskDisabled(true)
 		try {
-			const restoreType: ClineCheckpointRestore = "task"
+			const restoreType: JamilaCheckpointRestore = "task"
 			await CheckpointsServiceClient.checkpointRestore(
 				CheckpointRestoreRequest.create({
 					number: messageTs,
@@ -114,7 +114,7 @@ export const CheckmarkControl = ({ messageTs, isCheckpointCheckedOut }: Checkmar
 	const handleRestoreWorkspace = async () => {
 		setRestoreWorkspaceDisabled(true)
 		try {
-			const restoreType: ClineCheckpointRestore = "workspace"
+			const restoreType: JamilaCheckpointRestore = "workspace"
 			await CheckpointsServiceClient.checkpointRestore(
 				CheckpointRestoreRequest.create({
 					number: messageTs,
@@ -130,7 +130,7 @@ export const CheckmarkControl = ({ messageTs, isCheckpointCheckedOut }: Checkmar
 	const handleRestoreBoth = async () => {
 		setRestoreBothDisabled(true)
 		try {
-			const restoreType: ClineCheckpointRestore = "taskAndWorkspace"
+			const restoreType: JamilaCheckpointRestore = "taskAndWorkspace"
 			await CheckpointsServiceClient.checkpointRestore(
 				CheckpointRestoreRequest.create({
 					number: messageTs,

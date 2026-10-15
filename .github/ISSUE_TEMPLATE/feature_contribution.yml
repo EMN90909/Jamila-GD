@@ -5,16 +5,16 @@ body:
     - type: markdown
       attributes:
           value: |
-              **Feature Proposal & Contribution for Cline**
+              **Feature Proposal & Contribution for Jamila**
 
-              Thank you for proposing a feature or improvement for Cline! This template helps us understand the problem, evaluate the solution, and coordinate implementation.
+              Thank you for proposing a feature or improvement for Jamila! This template helps us understand the problem, evaluate the solution, and coordinate implementation.
 
               **For detailed proposals:** Please provide comprehensive information to enable fast prioritization and discussion.
               **For contribution offers:** You can indicate your willingness to implement the feature yourself.
 
               Before submitting:
-              - Search existing [Issues](https://github.com/cline/cline/issues) and [Discussions](https://github.com/cline/cline/discussions) to avoid duplicates
-              - Read the [Contributing Guide](https://github.com/cline/cline/blob/main/CONTRIBUTING.md) if you plan to contribute
+              - Search existing [Issues](https://github.com/jam/jam/issues) and [Discussions](https://github.com/jam/jam/discussions) to avoid duplicates
+              - Read the [Contributing Guide](https://github.com/jam/jam/blob/main/CONTRIBUTING.md) if you plan to contribute
               - Don't start implementation until the proposal is reviewed and approved
 
     - type: textarea
@@ -27,7 +27,7 @@ body:
               ✅ Good examples:
               - "LLM provider returns 400 error when nearing the context window instead of truncating"
               - "Submit button is invisible in dark mode"
-              - "Users can't easily share their Cline configurations with team members"
+              - "Users can't easily share their Jamila configurations with team members"
 
               ❌ Avoid vague descriptions:
               - "Performance is bad"
@@ -111,6 +111,6 @@ body:
           label: Contribution checklist (if contributing)
           description: Only check these if you plan to contribute
           options:
-              - label: I've read the [Contributing Guide](https://github.com/cline/cline/blob/main/CONTRIBUTING.md)
+              - label: I've read the [Contributing Guide](https://github.com/jam/jam/blob/main/CONTRIBUTING.md)
               - label: I'm willing to make changes based on feedback
               - label: I understand the code review process and requirements

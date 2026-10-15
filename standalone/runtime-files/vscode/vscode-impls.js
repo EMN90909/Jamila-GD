@@ -829,7 +829,7 @@ Object.assign(vscode.languages, {
 
 console.log("Finished loading stub impls...")
 
-// Export the terminal manager globally for Cline core to use
+// Export the terminal manager globally for Jamila core to use
 global.standaloneTerminalManager = globalTerminalManager
 
 // Override the TerminalManager to use our standalone implementation

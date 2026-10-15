@@ -1,6 +1,6 @@
-# Cline Documentation
+# Jamila Documentation
 
-Welcome to the Cline documentation - your comprehensive guide to using and extending Cline's capabilities. Here you'll find resources to help you get started, improve your skills, and contribute to the project.
+Welcome to the Jamila documentation - your comprehensive guide to using and extending Jamila's capabilities. Here you'll find resources to help you get started, improve your skills, and contribute to the project.
 
 ## Getting Started
 
@@ -9,23 +9,23 @@ Welcome to the Cline documentation - your comprehensive guide to using and exten
 
 ## Improving Your Prompting Skills
 
--   **Want to communicate more effectively with Cline?** Explore:
+-   **Want to communicate more effectively with Jamila?** Explore:
     -   [Prompt Engineering Guide](prompting/README.md)
-    -   [Cline Memory Bank](prompting/custom%20instructions%20library/cline-memory-bank.md)
+    -   [Jamila Memory Bank](prompting/custom%20instructions%20library/jam-memory-bank.md)
 
-## Exploring Cline's Tools
+## Exploring Jamila's Tools
 
--   **Understand Cline's capabilities:**
+-   **Understand Jamila's capabilities:**
 
-    -   [Cline Tools Guide](tools/cline-tools-guide.md)
+    -   [Jamila Tools Guide](tools/jam-tools-guide.md)
     -   [Mentions Feature Guide](tools/mentions-guide.md)
 
--   **Extend Cline with MCP Servers:**
+-   **Extend Jamila with MCP Servers:**
     -   [MCP Overview](mcp/README.md)
     -   [Building MCP Servers from GitHub](mcp/mcp-server-from-github.md)
     -   [Building Custom MCP Servers](mcp/mcp-server-from-scratch.md)
 
-## Contributing to Cline
+## Contributing to Jamila
 
 -   **Interested in contributing?** We welcome your input:
     -   Feel free to submit a pull request
@@ -33,7 +33,7 @@ Welcome to the Cline documentation - your comprehensive guide to using and exten
 
 ## Additional Resources
 
--   **Cline GitHub Repository:** [https://github.com/cline/cline](https://github.com/cline/cline)
+-   **Jamila GitHub Repository:** [https://github.com/jam/jam](https://github.com/jam/jam)
 -   **MCP Documentation:** [https://modelcontextprotocol.org/docs](https://modelcontextprotocol.org/docs)
 
-We're always looking to improve this documentation. If you have suggestions or find areas that could be enhanced, please let us know. Your feedback helps make Cline better for everyone.
+We're always looking to improve this documentation. If you have suggestions or find areas that could be enhanced, please let us know. Your feedback helps make Jamila better for everyone.

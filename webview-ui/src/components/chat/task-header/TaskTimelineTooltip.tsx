@@ -1,15 +1,15 @@
 import React from "react"
-import { ClineMessage } from "@shared/ExtensionMessage"
+import { JamilaMessage } from "@shared/ExtensionMessage"
 import { Tooltip } from "@heroui/react"
 import { getColor } from "./util"
 
 interface TaskTimelineTooltipProps {
-	message: ClineMessage
+	message: JamilaMessage
 	children: React.ReactNode
 }
 
 const TaskTimelineTooltip = ({ message, children }: TaskTimelineTooltipProps) => {
-	const getMessageDescription = (message: ClineMessage): string => {
+	const getMessageDescription = (message: JamilaMessage): string => {
 		if (message.type === "say") {
 			switch (message.say) {
 				// TODO: Need to confirm these classifcations with design
@@ -101,7 +101,7 @@ const TaskTimelineTooltip = ({ message, children }: TaskTimelineTooltipProps) =>
 		return "Unknown Message Type"
 	}
 
-	const getMessageContent = (message: ClineMessage): string => {
+	const getMessageContent = (message: JamilaMessage): string => {
 		if (message.text) {
 			if (message.type === "ask" && message.ask === "plan_mode_respond" && message.text) {
 				try {
@@ -127,7 +127,7 @@ const TaskTimelineTooltip = ({ message, children }: TaskTimelineTooltipProps) =>
 		return ""
 	}
 
-	const getTimestamp = (message: ClineMessage): string => {
+	const getTimestamp = (message: JamilaMessage): string => {
 		if (message.ts) {
 			const messageDate = new Date(message.ts)
 			const today = new Date()

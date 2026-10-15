@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Repository-wide Cline -> Jamila / jam migration.
+"""Repository-wide Jamila -> Jamila / jam migration.
 
 Dry run by default. Run with --apply from the repository root to modify the
 working tree. Inspect the diff and run tests before committing.
@@ -10,7 +10,7 @@ import os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-REPLACEMENTS = (("CLINE", "JAM"), ("Cline", "Jamila"), ("cline", "jam"))
+REPLACEMENTS = (("JAM", "JAM"), ("Jamila", "Jamila"), ("jam", "jam"))
 TEXT_EXTENSIONS = {
     ".ts", ".tsx", ".js", ".jsx", ".json", ".jsonc", ".md", ".mdx",
     ".yaml", ".yml", ".toml", ".xml", ".html", ".css", ".scss", ".less",

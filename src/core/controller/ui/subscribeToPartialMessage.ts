@@ -1,6 +1,6 @@
 import { Controller } from "../index"
 import { EmptyRequest } from "@shared/proto/common"
-import { ClineMessage } from "@shared/proto/ui"
+import { JamilaMessage } from "@shared/proto/ui"
 import { StreamingResponseHandler, getRequestRegistry } from "../grpc-handler"
 
 // Keep track of active partial message subscriptions
@@ -35,9 +35,9 @@ export async function subscribeToPartialMessage(
 
 /**
  * Send a partial message event to all active subscribers
- * @param partialMessage The ClineMessage to send
+ * @param partialMessage The JamilaMessage to send
  */
-export async function sendPartialMessageEvent(partialMessage: ClineMessage): Promise<void> {
+export async function sendPartialMessageEvent(partialMessage: JamilaMessage): Promise<void> {
 	// Send the event to all active subscribers
 	const promises = Array.from(activePartialMessageSubscriptions).map(async (responseStream) => {
 		try {

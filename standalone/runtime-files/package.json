@@ -1,5 +1,5 @@
 {
-	"name": "cline-standalone",
+	"name": "jam-standalone",
 	"version": "0.0.1",
 	"main": "standalone.js",
 	"dependencies": {

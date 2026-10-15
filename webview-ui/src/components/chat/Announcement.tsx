@@ -30,7 +30,7 @@ const linkContainerStyle: CSSProperties = { margin: "0" }
 const linkStyle: CSSProperties = { display: "inline" }
 
 /*
-You must update the latestAnnouncementId in ClineProvider for new announcements to show to users. This new id will be compared with what's in state for the 'last announcement shown', and if it's different then the announcement will render. As soon as an announcement is shown, the id will be updated in state. This ensures that announcements are not shown more than once, even if the user doesn't close it themselves.
+You must update the latestAnnouncementId in JamilaProvider for new announcements to show to users. This new id will be compared with what's in state for the 'last announcement shown', and if it's different then the announcement will render. As soon as an announcement is shown, the id will be updated in state. This ensures that announcements are not shown more than once, even if the user doesn't close it themselves.
 */
 const Announcement = ({ version, hideAnnouncement }: AnnouncementProps) => {
 	const minorVersion = version.split(".").slice(0, 2).join(".") // 2.0.0 -> 2.0
@@ -44,7 +44,7 @@ const Announcement = ({ version, hideAnnouncement }: AnnouncementProps) => {
 			</h3>
 			<ul style={ulStyle}>
 				<li>
-					<b>Optimized for Claude 4:</b> Cline is now optimized to work with the Claude 4 family of models, resulting in
+					<b>Optimized for Claude 4:</b> Jamila is now optimized to work with the Claude 4 family of models, resulting in
 					improved performance, reliability, and new capabilities.
 				</li>
 				<li>
@@ -52,11 +52,11 @@ const Announcement = ({ version, hideAnnouncement }: AnnouncementProps) => {
 					authentication to access Gemini models for free.
 				</li>
 				<li>
-					<b>WebFetch Tool:</b> Gemini 2.5 Pro and Claude 4 models now support the WebFetch tool, allowing Cline to
+					<b>WebFetch Tool:</b> Gemini 2.5 Pro and Claude 4 models now support the WebFetch tool, allowing Jamila to
 					retrieve and summarize web content directly in conversations.
 				</li>
 				<li>
-					<b>Self Knowledge:</b> When using frontier models, Cline is self-aware about his capabilities and featureset.
+					<b>Self Knowledge:</b> When using frontier models, Jamila is self-aware about his capabilities and featureset.
 				</li>
 				<li>
 					<b>Improved Diff Editing:</b> Improved diff editing to achieve record lows in diff edit failures for frontier
@@ -104,15 +104,15 @@ const Announcement = ({ version, hideAnnouncement }: AnnouncementProps) => {
 			<div style={hrStyle} />
 			<p style={linkContainerStyle}>
 				Join us on{" "}
-				<VSCodeLink style={linkStyle} href="https://x.com/cline">
+				<VSCodeLink style={linkStyle} href="https://x.com/jam">
 					X,
 				</VSCodeLink>{" "}
-				<VSCodeLink style={linkStyle} href="https://discord.gg/cline">
+				<VSCodeLink style={linkStyle} href="https://discord.gg/jam">
 					discord,
 				</VSCodeLink>{" "}
 				or{" "}
-				<VSCodeLink style={linkStyle} href="https://www.reddit.com/r/cline/">
-					r/cline
+				<VSCodeLink style={linkStyle} href="https://www.reddit.com/r/jam/">
+					r/jam
 				</VSCodeLink>
 				for more updates!
 			</p>

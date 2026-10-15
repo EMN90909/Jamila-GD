@@ -1,13 +1,13 @@
-# Contributing to Cline
+# Contributing to Jamila
 
-We're thrilled you're interested in contributing to Cline. Whether you're fixing a bug, adding a feature, or improving our docs, every contribution makes Cline smarter! To keep our community vibrant and welcoming, all members must adhere to our [Code of Conduct](CODE_OF_CONDUCT.md).
+We're thrilled you're interested in contributing to Jamila. Whether you're fixing a bug, adding a feature, or improving our docs, every contribution makes Jamila smarter! To keep our community vibrant and welcoming, all members must adhere to our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Reporting Bugs or Issues
 
-Bug reports help make Cline better for everyone! Before creating a new issue, please [search existing ones](https://github.com/cline/cline/issues) to avoid duplicates. When you're ready to report a bug, head over to our [issues page](https://github.com/cline/cline/issues/new/choose) where you'll find a template to help you with filling out the relevant information.
+Bug reports help make Jamila better for everyone! Before creating a new issue, please [search existing ones](https://github.com/jam/jam/issues) to avoid duplicates. When you're ready to report a bug, head over to our [issues page](https://github.com/jam/jam/issues/new/choose) where you'll find a template to help you with filling out the relevant information.
 
 <blockquote class='warning-note'>
-     🔐 <b>Important:</b> If you discover a security vulnerability, please use the <a href="https://github.com/cline/cline/security/advisories/new">Github security tool to report it privately</a>.
+     🔐 <b>Important:</b> If you discover a security vulnerability, please use the <a href="https://github.com/jam/jam/security/advisories/new">Github security tool to report it privately</a>.
 </blockquote>
 
 
@@ -15,12 +15,12 @@ Bug reports help make Cline better for everyone! Before creating a new issue, pl
 
 All contributions must begin with a GitHub Issue, unless the change is for small bug fixes, typo corrections, minor wording improvements, or simple type fixes that don't change functionality.
 
-- **Check existing issues**: Search [GitHub Issues](https://github.com/cline/cline/issues).
+- **Check existing issues**: Search [GitHub Issues](https://github.com/jam/jam/issues).
 - **Create an issue**: Use appropriate templates:
     - **Contributions:** Use the "Contribution Request" template to propose what you'd like to work on.
     - **Bugs:** "Bug Report" template for reporting issues.
     - **Features:** "Detailed Feature Proposal" template for suggesting new features.
-- **Wait for approval**: A core Cline contributor must approve your contribution request before you start implementation.
+- **Wait for approval**: A core Jamila contributor must approve your contribution request before you start implementation.
 - **Claim issues**: Once approved, the issue will be assigned to you.
 
 **PRs without approved issues may be closed.**
@@ -28,9 +28,9 @@ All contributions must begin with a GitHub Issue, unless the change is for small
 
 ## Deciding What to Work On
 
-Looking for a good first contribution? Check out issues labeled ["good first issue"](https://github.com/cline/cline/labels/good%20first%20issue) or ["help wanted"](https://github.com/cline/cline/labels/help%20wanted). These are specifically curated for new contributors and areas where we'd love some help!
+Looking for a good first contribution? Check out issues labeled ["good first issue"](https://github.com/jam/jam/labels/good%20first%20issue) or ["help wanted"](https://github.com/jam/jam/labels/help%20wanted). These are specifically curated for new contributors and areas where we'd love some help!
 
-We also welcome contributions to our [documentation](https://github.com/cline/cline/tree/main/docs)! Whether it's fixing typos, improving existing guides, or creating new educational content - we'd love to build a community-driven repository of resources that helps everyone get the most out of Cline. You can start by diving into `/docs` and looking for areas that need improvement.
+We also welcome contributions to our [documentation](https://github.com/jam/jam/tree/main/docs)! Whether it's fixing typos, improving existing guides, or creating new educational content - we'd love to build a community-driven repository of resources that helps everyone get the most out of Jamila. You can start by diving into `/docs` and looking for areas that need improvement.
 
 ## Development Setup
 
@@ -39,11 +39,11 @@ We also welcome contributions to our [documentation](https://github.com/cline/cl
 
 1. Clone the repository _(Requires [git-lfs](https://git-lfs.com/))_:
     ```bash
-    git clone https://github.com/cline/cline.git
+    git clone https://github.com/jam/jam.git
     ```
 2. Open the project in VSCode:
     ```bash
-    code cline
+    code jam
     ```
 3. Install the necessary dependencies for the extension and webview-gui:
     ```bash
@@ -137,7 +137,7 @@ We also welcome contributions to our [documentation](https://github.com/cline/cl
 
 ## Writing and Submitting Code
 
-Anyone can contribute code to Cline, but we ask that you follow these guidelines to ensure your contributions can be smoothly integrated:
+Anyone can contribute code to Jamila, but we ask that you follow these guidelines to ensure your contributions can be smoothly integrated:
 
 1. **Keep Pull Requests Focused**
 
@@ -193,4 +193,4 @@ Anyone can contribute code to Cline, but we ask that you follow these guidelines
 
 By submitting a pull request, you agree that your contributions will be licensed under the same license as the project ([Apache 2.0](LICENSE)).
 
-Remember: Contributing to Cline isn't just about writing code - it's about being part of a community that's shaping the future of AI-assisted development. Let's build something amazing together! 🚀
+Remember: Contributing to Jamila isn't just about writing code - it's about being part of a community that's shaping the future of AI-assisted development. Let's build something amazing together! 🚀

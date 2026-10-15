@@ -1,7 +1,7 @@
 {
 	"name": "eslint-plugin-eslint-rules",
 	"version": "1.0.0",
-	"description": "Custom ESLint rules for Cline",
+	"description": "Custom ESLint rules for Jamila",
 	"main": "index.js",
 	"scripts": {
 		"test": "mocha --no-config --require ts-node/register __tests__/**/*.test.ts"
@@ -10,7 +10,7 @@
 		"eslint",
 		"eslintplugin"
 	],
-	"author": "Cline Bot Inc.",
+	"author": "Jamila Bot Inc.",
 	"license": "Apache-2.0",
 	"dependencies": {
 		"@typescript-eslint/utils": "^8.33.0"

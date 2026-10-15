@@ -21,12 +21,12 @@ import { FileServiceClient, TaskServiceClient, UiServiceClient } from "@/service
 import { findMatchingResourceOrTemplate, getMcpServerDisplayName } from "@/utils/mcp"
 import { vscode } from "@/utils/vscode"
 import {
-	ClineApiReqInfo,
-	ClineAskQuestion,
-	ClineAskUseMcpServer,
-	ClineMessage,
-	ClinePlanModeResponse,
-	ClineSayTool,
+	JamilaApiReqInfo,
+	JamilaAskQuestion,
+	JamilaAskUseMcpServer,
+	JamilaMessage,
+	JamilaPlanModeResponse,
+	JamilaSayTool,
 	COMPLETION_RESULT_CHANGES_FLAG,
 	ExtensionMessage,
 } from "@shared/ExtensionMessage"
@@ -55,10 +55,10 @@ const ChatRowContainer = styled.div`
 `
 
 interface ChatRowProps {
-	message: ClineMessage
+	message: JamilaMessage
 	isExpanded: boolean
 	onToggleExpand: () => void
-	lastModifiedMessage?: ClineMessage
+	lastModifiedMessage?: JamilaMessage
 	isLast: boolean
 	onHeightChange: (isTaller: boolean) => void
 	inputValue?: string
@@ -195,7 +195,7 @@ export const ChatRowContent = ({
 	const contentRef = useRef<HTMLDivElement>(null)
 	const [cost, apiReqCancelReason, apiReqStreamingFailedMessage, retryStatus] = useMemo(() => {
 		if (message.text != null && message.say === "api_req_started") {
-			const info: ClineApiReqInfo = JSON.parse(message.text)
+			const info: JamilaApiReqInfo = JSON.parse(message.text)
 			return [info.cost, info.cancelReason, info.streamingFailedMessage, info.retryStatus]
 		}
 		return [undefined, undefined, undefined, undefined]
@@ -314,7 +314,7 @@ export const ChatRowContent = ({
 							color: errorColor,
 							marginBottom: "-1.5px",
 						}}></span>,
-					<span style={{ color: errorColor, fontWeight: "bold" }}>Cline is having trouble...</span>,
+					<span style={{ color: errorColor, fontWeight: "bold" }}>Jamila is having trouble...</span>,
 				]
 			case "auto_approval_max_req_reached":
 				return [
@@ -338,10 +338,10 @@ export const ChatRowContent = ({
 								marginBottom: "-1.5px",
 							}}></span>
 					),
-					<span style={{ color: normalColor, fontWeight: "bold" }}>Cline wants to execute this command:</span>,
+					<span style={{ color: normalColor, fontWeight: "bold" }}>Jamila wants to execute this command:</span>,
 				]
 			case "use_mcp_server":
-				const mcpServerUse = JSON.parse(message.text || "{}") as ClineAskUseMcpServer
+				const mcpServerUse = JSON.parse(message.text || "{}") as JamilaAskUseMcpServer
 				return [
 					isMcpServerResponding ? (
 						<ProgressIndicator />
@@ -354,7 +354,7 @@ export const ChatRowContent = ({
 							}}></span>
 					),
 					<span className="ph-no-capture" style={{ color: normalColor, fontWeight: "bold", wordBreak: "break-word" }}>
-						Cline wants to {mcpServerUse.type === "use_mcp_tool" ? "use a tool" : "access a resource"} on the{" "}
+						Jamila wants to {mcpServerUse.type === "use_mcp_tool" ? "use a tool" : "access a resource"} on the{" "}
 						<code style={{ wordBreak: "break-all" }}>
 							{getMcpServerDisplayName(mcpServerUse.serverName, mcpMarketplaceCatalog)}
 						</code>{" "}
@@ -443,7 +443,7 @@ export const ChatRowContent = ({
 							color: normalColor,
 							marginBottom: "-1.5px",
 						}}></span>,
-					<span style={{ color: normalColor, fontWeight: "bold" }}>Cline has a question:</span>,
+					<span style={{ color: normalColor, fontWeight: "bold" }}>Jamila has a question:</span>,
 				]
 			default:
 				return [null, null]
@@ -466,7 +466,7 @@ export const ChatRowContent = ({
 
 	const tool = useMemo(() => {
 		if (message.ask === "tool" || message.say === "tool") {
-			return JSON.parse(message.text || "{}") as ClineSayTool
+			return JSON.parse(message.text || "{}") as JamilaSayTool
 		}
 		return null
 	}, [message.ask, message.say, message.text])
@@ -496,7 +496,7 @@ export const ChatRowContent = ({
 							{toolIcon("edit")}
 							{tool.operationIsLocatedInWorkspace === false &&
 								toolIcon("sign-out", "yellow", -90, "This file is outside of your workspace")}
-							<span style={{ fontWeight: "bold" }}>Cline wants to edit this file:</span>
+							<span style={{ fontWeight: "bold" }}>Jamila wants to edit this file:</span>
 						</div>
 						<CodeAccordian
 							// isLoading={message.partial}
@@ -514,7 +514,7 @@ export const ChatRowContent = ({
 							{toolIcon("new-file")}
 							{tool.operationIsLocatedInWorkspace === false &&
 								toolIcon("sign-out", "yellow", -90, "This file is outside of your workspace")}
-							<span style={{ fontWeight: "bold" }}>Cline wants to create a new file:</span>
+							<span style={{ fontWeight: "bold" }}>Jamila wants to create a new file:</span>
 						</div>
 						<CodeAccordian
 							isLoading={message.partial}
@@ -533,8 +533,8 @@ export const ChatRowContent = ({
 							{tool.operationIsLocatedInWorkspace === false &&
 								toolIcon("sign-out", "yellow", -90, "This file is outside of your workspace")}
 							<span style={{ fontWeight: "bold" }}>
-								{/* {message.type === "ask" ? "" : "Cline read this file:"} */}
-								Cline wants to read this file:
+								{/* {message.type === "ask" ? "" : "Jamila read this file:"} */}
+								Jamila wants to read this file:
 							</span>
 						</div>
 						<div
@@ -594,8 +594,8 @@ export const ChatRowContent = ({
 								toolIcon("sign-out", "yellow", -90, "This is outside of your workspace")}
 							<span style={{ fontWeight: "bold" }}>
 								{message.type === "ask"
-									? "Cline wants to view the top level files in this directory:"
-									: "Cline viewed the top level files in this directory:"}
+									? "Jamila wants to view the top level files in this directory:"
+									: "Jamila viewed the top level files in this directory:"}
 							</span>
 						</div>
 						<CodeAccordian
@@ -616,8 +616,8 @@ export const ChatRowContent = ({
 								toolIcon("sign-out", "yellow", -90, "This is outside of your workspace")}
 							<span style={{ fontWeight: "bold" }}>
 								{message.type === "ask"
-									? "Cline wants to recursively view all files in this directory:"
-									: "Cline recursively viewed all files in this directory:"}
+									? "Jamila wants to recursively view all files in this directory:"
+									: "Jamila recursively viewed all files in this directory:"}
 							</span>
 						</div>
 						<CodeAccordian
@@ -638,8 +638,8 @@ export const ChatRowContent = ({
 								toolIcon("sign-out", "yellow", -90, "This file is outside of your workspace")}
 							<span style={{ fontWeight: "bold" }}>
 								{message.type === "ask"
-									? "Cline wants to view source code definition names used in this directory:"
-									: "Cline viewed source code definition names used in this directory:"}
+									? "Jamila wants to view source code definition names used in this directory:"
+									: "Jamila viewed source code definition names used in this directory:"}
 							</span>
 						</div>
 						<CodeAccordian
@@ -658,7 +658,7 @@ export const ChatRowContent = ({
 							{tool.operationIsLocatedInWorkspace === false &&
 								toolIcon("sign-out", "yellow", -90, "This is outside of your workspace")}
 							<span style={{ fontWeight: "bold" }}>
-								Cline wants to search this directory for <code>{tool.regex}</code>:
+								Jamila wants to search this directory for <code>{tool.regex}</code>:
 							</span>
 						</div>
 						<CodeAccordian
@@ -679,8 +679,8 @@ export const ChatRowContent = ({
 								toolIcon("sign-out", "yellow", -90, "This URL is external")}
 							<span style={{ fontWeight: "bold" }}>
 								{message.type === "ask"
-									? "Cline wants to fetch content from this URL:"
-									: "Cline fetched content from this URL:"}
+									? "Jamila wants to fetch content from this URL:"
+									: "Jamila fetched content from this URL:"}
 							</span>
 						</div>
 						<div
@@ -818,7 +818,7 @@ export const ChatRowContent = ({
 	}
 
 	if (message.ask === "use_mcp_server" || message.say === "use_mcp_server") {
-		const useMcpServer = JSON.parse(message.text || "{}") as ClineAskUseMcpServer
+		const useMcpServer = JSON.parse(message.text || "{}") as JamilaAskUseMcpServer
 		const server = mcpServers.find((server) => server.name === useMcpServer.serverName)
 		return (
 			<>
@@ -1049,7 +1049,7 @@ export const ChatRowContent = ({
 														<br />
 														It seems like you're having Windows PowerShell issues, please see this{" "}
 														<a
-															href="https://github.com/cline/cline/wiki/TroubleShooting-%E2%80%90-%22PowerShell-is-not-recognized-as-an-internal-or-external-command%22"
+															href="https://github.com/jam/jam/wiki/TroubleShooting-%E2%80%90-%22PowerShell-is-not-recognized-as-an-internal-or-external-command%22"
 															style={{
 																color: "inherit",
 																textDecoration: "underline",
@@ -1198,7 +1198,7 @@ export const ChatRowContent = ({
 						/>
 					)
 				case "user_feedback_diff":
-					const tool = JSON.parse(message.text || "{}") as ClineSayTool
+					const tool = JSON.parse(message.text || "{}") as JamilaSayTool
 					return (
 						<div
 							style={{
@@ -1264,7 +1264,7 @@ export const ChatRowContent = ({
 							</div>
 						</>
 					)
-				case "clineignore_error":
+				case "jamignore_error":
 					return (
 						<>
 							<div
@@ -1298,8 +1298,8 @@ export const ChatRowContent = ({
 									</span>
 								</div>
 								<div>
-									Cline tried to access <code>{message.text}</code> which is blocked by the{" "}
-									<code>.clineignore</code>
+									Jamila tried to access <code>{message.text}</code> which is blocked by the{" "}
+									<code>.jamignore</code>
 									file.
 								</div>
 							</div>
@@ -1425,12 +1425,12 @@ export const ChatRowContent = ({
 									</span>
 								</div>
 								<div>
-									Cline won't be able to view the command's output. Please update VSCode (
+									Jamila won't be able to view the command's output. Please update VSCode (
 									<code>CMD/CTRL + Shift + P</code> → "Update") and make sure you're using a supported shell:
 									zsh, bash, fish, or PowerShell (<code>CMD/CTRL + Shift + P</code> → "Terminal: Select Default
 									Profile").{" "}
 									<a
-										href="https://github.com/cline/cline/wiki/Troubleshooting-%E2%80%90-Shell-Integration-Unavailable"
+										href="https://github.com/jam/jam/wiki/Troubleshooting-%E2%80%90-Shell-Integration-Unavailable"
 										style={{
 											color: "inherit",
 											textDecoration: "underline",
@@ -1569,7 +1569,7 @@ export const ChatRowContent = ({
 					let options: string[] | undefined
 					let selected: string | undefined
 					try {
-						const parsedMessage = JSON.parse(message.text || "{}") as ClineAskQuestion
+						const parsedMessage = JSON.parse(message.text || "{}") as JamilaAskQuestion
 						question = parsedMessage.question
 						options = parsedMessage.options
 						selected = parsedMessage.selected
@@ -1621,7 +1621,7 @@ export const ChatRowContent = ({
 										color: normalColor,
 										marginBottom: "-1.5px",
 									}}></span>
-								<span style={{ color: normalColor, fontWeight: "bold" }}>Cline wants to start a new task:</span>
+								<span style={{ color: normalColor, fontWeight: "bold" }}>Jamila wants to start a new task:</span>
 							</div>
 							<NewTaskPreview context={message.text || ""} />
 						</>
@@ -1637,7 +1637,7 @@ export const ChatRowContent = ({
 										marginBottom: "-1.5px",
 									}}></span>
 								<span style={{ color: normalColor, fontWeight: "bold" }}>
-									Cline wants to condense your conversation:
+									Jamila wants to condense your conversation:
 								</span>
 							</div>
 							<NewTaskPreview context={message.text || ""} />
@@ -1654,7 +1654,7 @@ export const ChatRowContent = ({
 										marginBottom: "-1.5px",
 									}}></span>
 								<span style={{ color: normalColor, fontWeight: "bold" }}>
-									Cline wants to create a Github issue:
+									Jamila wants to create a Github issue:
 								</span>
 							</div>
 							<ReportBugPreview data={message.text || ""} />
@@ -1665,7 +1665,7 @@ export const ChatRowContent = ({
 					let options: string[] | undefined
 					let selected: string | undefined
 					try {
-						const parsedMessage = JSON.parse(message.text || "{}") as ClinePlanModeResponse
+						const parsedMessage = JSON.parse(message.text || "{}") as JamilaPlanModeResponse
 						response = parsedMessage.response
 						options = parsedMessage.options
 						selected = parsedMessage.selected

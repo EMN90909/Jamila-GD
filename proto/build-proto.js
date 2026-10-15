@@ -388,14 +388,14 @@ async function ensureProtoFilesExist() {
 		if (!existingProtoServices.includes(serviceName)) {
 			log_verbose(chalk.yellow(`Creating template proto file for ${serviceName}...`))
 
-			// Extract service class name from full name (e.g., "cline.ModelsService" -> "ModelsService")
+			// Extract service class name from full name (e.g., "jam.ModelsService" -> "ModelsService")
 			const serviceClassName = fullServiceName.split(".").pop()
 
 			// Create template proto file
 			const protoContent = `syntax = "proto3";
 
-package cline;
-option java_package = "bot.cline.proto";
+package jam;
+option java_package = "bot.jam.proto";
 option java_multiple_files = true;
 
 import "common.proto";

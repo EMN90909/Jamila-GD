@@ -119,7 +119,7 @@ function runProcess({ systemPrompt, messages, path, modelId }: ClaudeCodeOptions
 		"stream-json",
 		"--disallowedTools",
 		claudeCodeTools,
-		// Cline will handle recursive calls
+		// Jamila will handle recursive calls
 		"--max-turns",
 		"1",
 	]

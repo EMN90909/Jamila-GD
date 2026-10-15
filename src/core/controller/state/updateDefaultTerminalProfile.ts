@@ -6,8 +6,8 @@ import { TerminalInfo } from "@/integrations/terminal/TerminalRegistry"
 
 export async function updateDefaultTerminalProfile(
 	controller: Controller,
-	request: proto.cline.StringRequest,
-): Promise<proto.cline.TerminalProfileUpdateResponse> {
+	request: proto.jam.StringRequest,
+): Promise<proto.jam.TerminalProfileUpdateResponse> {
 	const profileId = request.value
 
 	// Update the terminal profile in the state
@@ -42,7 +42,7 @@ export async function updateDefaultTerminalProfile(
 	// Broadcast state update to all webviews
 	await controller.postStateToWebview()
 
-	return proto.cline.TerminalProfileUpdateResponse.create({
+	return proto.jam.TerminalProfileUpdateResponse.create({
 		closedCount,
 		busyTerminalsCount: busyTerminals.length,
 		hasBusyTerminals: busyTerminals.length > 0,

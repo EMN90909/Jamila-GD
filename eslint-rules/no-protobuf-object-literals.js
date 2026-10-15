@@ -1,6 +1,6 @@
 const { ESLintUtils } = require("@typescript-eslint/utils")
 
-const createRule = ESLintUtils.RuleCreator((name) => `https://cline.bot/eslint-rules/${name}`)
+const createRule = ESLintUtils.RuleCreator((name) => `https://jam.bot/eslint-rules/${name}`)
 
 module.exports = createRule({
 	name: "no-protobuf-object-literals",

@@ -1,7 +1,7 @@
 syntax = "proto3";
 
-package cline;
-option java_package = "bot.cline.proto";
+package jam;
+option java_package = "bot.jam.proto";
 option java_multiple_files = true;
 
 import "common.proto";
@@ -114,7 +114,7 @@ enum ApiProvider {
   DOUBAO = 14;
   MISTRAL = 15;
   VSCODE_LM = 16;
-  CLINE = 17;
+  JAM = 17;
   LITELLM = 18;
   NEBIUS = 19;
   FIREWORKS = 20;
@@ -166,7 +166,7 @@ message ModelsApiConfiguration {
   // From ApiHandlerOptions (excluding onRetryAttempt function)
   optional string api_model_id = 1;
   optional string api_key = 2;
-  optional string cline_api_key = 3;
+  optional string jam_api_key = 3;
   optional string task_id = 4;
   optional string lite_llm_base_url = 5;
   optional string lite_llm_model_id = 6;

@@ -23,7 +23,7 @@ export const SYSTEM_PROMPT = async (
     return SYSTEM_PROMPT_CLAUDE4(cwd, supportsBrowserUse, mcpHub, browserSettings)
   }
 
-	return `You are Cline, a highly skilled software engineer with extensive knowledge in many programming languages, frameworks, design patterns, and best practices.
+	return `You are Jamila, a highly skilled software engineer with extensive knowledge in many programming languages, frameworks, design patterns, and best practices.
 
 ====
 
@@ -654,23 +654,23 @@ You accomplish a given task iteratively, breaking it down into clear steps and w
 
 
 export function addUserInstructions(
-	globalClineRulesFileInstructions?: string,
-	localClineRulesFileInstructions?: string,
+	globalJamilaRulesFileInstructions?: string,
+	localJamilaRulesFileInstructions?: string,
 	localCursorRulesFileInstructions?: string,
 	localCursorRulesDirInstructions?: string,
 	localWindsurfRulesFileInstructions?: string,
-	clineIgnoreInstructions?: string,
+	jamIgnoreInstructions?: string,
 	preferredLanguageInstructions?: string,
 ) {
 	let customInstructions = ""
 	if (preferredLanguageInstructions) {
 		customInstructions += preferredLanguageInstructions + "\n\n"
 	}
-	if (globalClineRulesFileInstructions) {
-		customInstructions += globalClineRulesFileInstructions + "\n\n"
+	if (globalJamilaRulesFileInstructions) {
+		customInstructions += globalJamilaRulesFileInstructions + "\n\n"
 	}
-	if (localClineRulesFileInstructions) {
-		customInstructions += localClineRulesFileInstructions + "\n\n"
+	if (localJamilaRulesFileInstructions) {
+		customInstructions += localJamilaRulesFileInstructions + "\n\n"
 	}
 	if (localCursorRulesFileInstructions) {
 		customInstructions += localCursorRulesFileInstructions + "\n\n"
@@ -681,8 +681,8 @@ export function addUserInstructions(
 	if (localWindsurfRulesFileInstructions) {
 		customInstructions += localWindsurfRulesFileInstructions + "\n\n"
 	}
-	if (clineIgnoreInstructions) {
-		customInstructions += clineIgnoreInstructions
+	if (jamIgnoreInstructions) {
+		customInstructions += jamIgnoreInstructions
 	}
 
 	return `

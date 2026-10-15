@@ -102,7 +102,7 @@ export class LiteLlmHandler implements ApiHandler {
 		})
 
 		const requestPayload: OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming & {
-			metadata?: { cline_task_id: string }
+			metadata?: { jam_task_id: string }
 		} = {
 			model: this.options.liteLlmModelId || liteLlmDefaultModelId,
 			messages: [enhancedSystemMessage, ...enhancedMessages],
@@ -111,7 +111,7 @@ export class LiteLlmHandler implements ApiHandler {
 			stream_options: { include_usage: true },
 			...(thinkingConfig && { thinking: thinkingConfig }), // Add thinking configuration when applicable
 			...(this.options.taskId && {
-				metadata: { cline_task_id: this.options.taskId },
+				metadata: { jam_task_id: this.options.taskId },
 			}),
 		}
 

@@ -127,13 +127,13 @@ export function normalizeApiConfiguration(apiConfiguration?: ApiConfiguration): 
 				selectedModelId: apiConfiguration?.requestyModelId || requestyDefaultModelId,
 				selectedModelInfo: apiConfiguration?.requestyModelInfo || requestyDefaultModelInfo,
 			}
-		case "cline":
+		case "jam":
 			const openRouterModelId = apiConfiguration?.openRouterModelId || openRouterDefaultModelId
 			const openRouterModelInfo = apiConfiguration?.openRouterModelInfo || openRouterDefaultModelInfo
 			return {
 				selectedProvider: provider,
 				selectedModelId: openRouterModelId,
-				// TODO: remove this once we have a better way to handle free models on Cline
+				// TODO: remove this once we have a better way to handle free models on Jamila
 				// Free grok 3 promotion
 				selectedModelInfo:
 					openRouterModelId === "x-ai/grok-3"

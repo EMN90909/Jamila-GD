@@ -10,7 +10,7 @@ import * as vscode from "vscode"
 import { Logger } from "@services/logging/Logger"
 import { ApiHandler, buildApiHandler } from "@api/index"
 import { AnthropicHandler } from "@api/providers/anthropic"
-import { ClineHandler } from "@api/providers/cline"
+import { JamilaHandler } from "@api/providers/jam"
 import { OpenRouterHandler } from "@api/providers/openrouter"
 import { ApiStream } from "@api/transform/stream"
 import CheckpointTracker from "@integrations/checkpoints/CheckpointTracker"
@@ -30,17 +30,17 @@ import { ChatSettings } from "@shared/ChatSettings"
 import { combineApiRequests } from "@shared/combineApiRequests"
 import { combineCommandSequences } from "@shared/combineCommandSequences"
 import {
-	ClineApiReqCancelReason,
-	ClineApiReqInfo,
-	ClineAsk,
-	ClineMessage,
-	ClineSay,
+	JamilaApiReqCancelReason,
+	JamilaApiReqInfo,
+	JamilaAsk,
+	JamilaMessage,
+	JamilaSay,
 	ExtensionMessage,
 } from "@shared/ExtensionMessage"
 import { getApiMetrics } from "@shared/getApiMetrics"
 import { HistoryItem } from "@shared/HistoryItem"
 import { DEFAULT_LANGUAGE_SETTINGS, getLanguageKey, LanguageDisplay } from "@shared/Languages"
-import { ClineAskResponse, ClineCheckpointRestore } from "@shared/WebviewMessage"
+import { JamilaAskResponse, JamilaCheckpointRestore } from "@shared/WebviewMessage"
 import { arePathsEqual } from "@utils/path"
 
 import {
@@ -50,13 +50,13 @@ import {
 	ToolParamName,
 	ToolUseName,
 } from "@core/assistant-message"
-import { ClineIgnoreController } from "@core/ignore/ClineIgnoreController"
+import { JamilaIgnoreController } from "@core/ignore/JamilaIgnoreController"
 import { parseMentions } from "@core/mentions"
 import { formatResponse } from "@core/prompts/responses"
 import { addUserInstructions, SYSTEM_PROMPT } from "@core/prompts/system"
 import { sendPartialMessageEvent } from "@core/controller/ui/subscribeToPartialMessage"
 import { sendRelinquishControlEvent } from "@core/controller/ui/subscribeToRelinquishControl"
-import { convertClineMessageToProto } from "@shared/proto-conversions/cline-message"
+import { convertJamilaMessageToProto } from "@shared/proto-conversions/jam-message"
 import { getContextWindowInfo } from "@core/context/context-management/context-window-utils"
 import { FileContextTracker } from "@core/context/context-tracking/FileContextTracker"
 import { ModelContextTracker } from "@core/context/context-tracking/ModelContextTracker"
@@ -69,15 +69,15 @@ import {
 	ensureRulesDirectoryExists,
 	ensureTaskDirectoryExists,
 	getSavedApiConversationHistory,
-	getSavedClineMessages,
+	getSavedJamilaMessages,
 	GlobalFileNames,
 } from "@core/storage/disk"
 import {
-	getGlobalClineRules,
-	getLocalClineRules,
-	refreshClineRulesToggles,
-} from "@core/context/instructions/user-instructions/cline-rules"
-import { ensureLocalClineDirExists } from "../context/instructions/user-instructions/rule-helpers"
+	getGlobalJamilaRules,
+	getLocalJamilaRules,
+	refreshJamilaRulesToggles,
+} from "@core/context/instructions/user-instructions/jam-rules"
+import { ensureLocalJamilaDirExists } from "../context/instructions/user-instructions/rule-helpers"
 import {
 	refreshExternalRulesToggles,
 	getLocalWindsurfRules,
@@ -127,7 +127,7 @@ export class Task {
 	contextManager: ContextManager
 	private diffViewProvider: DiffViewProvider
 	private checkpointTracker?: CheckpointTracker
-	private clineIgnoreController: ClineIgnoreController
+	private jamIgnoreController: JamilaIgnoreController
 	private toolExecutor: ToolExecutor
 
 	// Metadata tracking
@@ -180,7 +180,7 @@ export class Task {
 		this.postMessageToWebview = postMessageToWebview
 		this.reinitExistingTaskFromId = reinitExistingTaskFromId
 		this.cancelTask = cancelTask
-		this.clineIgnoreController = new ClineIgnoreController(cwd)
+		this.jamIgnoreController = new JamilaIgnoreController(cwd)
 		// Initialization moved to startTask/resumeTaskFromHistory
 		this.terminalManager = new TerminalManager()
 		this.terminalManager.setShellIntegrationTimeout(shellIntegrationTimeout)
@@ -231,11 +231,11 @@ export class Task {
 			...apiConfiguration,
 			taskId: this.taskId,
 			onRetryAttempt: async (attempt: number, maxRetries: number, delay: number, error: any) => {
-				const clineMessages = this.messageStateHandler.getClineMessages()
-				const lastApiReqStartedIndex = findLastIndex(clineMessages, (m) => m.say === "api_req_started")
+				const jamMessages = this.messageStateHandler.getJamilaMessages()
+				const lastApiReqStartedIndex = findLastIndex(jamMessages, (m) => m.say === "api_req_started")
 				if (lastApiReqStartedIndex !== -1) {
 					try {
-						const currentApiReqInfo: ClineApiReqInfo = JSON.parse(clineMessages[lastApiReqStartedIndex].text || "{}")
+						const currentApiReqInfo: JamilaApiReqInfo = JSON.parse(jamMessages[lastApiReqStartedIndex].text || "{}")
 						currentApiReqInfo.retryStatus = {
 							attempt: attempt, // attempt is already 1-indexed from retry.ts
 							maxAttempts: maxRetries, // total attempts
@@ -245,7 +245,7 @@ export class Task {
 						// Clear previous cancelReason and streamingFailedMessage if we are retrying
 						delete currentApiReqInfo.cancelReason
 						delete currentApiReqInfo.streamingFailedMessage
-						await this.messageStateHandler.updateClineMessage(lastApiReqStartedIndex, {
+						await this.messageStateHandler.updateJamilaMessage(lastApiReqStartedIndex, {
 							text: JSON.stringify(currentApiReqInfo),
 						})
 
@@ -301,7 +301,7 @@ export class Task {
 			this.diffViewProvider,
 			this.mcpHub,
 			this.fileContextTracker,
-			this.clineIgnoreController,
+			this.jamIgnoreController,
 			this.workspaceTracker,
 			this.contextManager,
 			this.autoApprovalSettings,
@@ -338,16 +338,16 @@ export class Task {
 		this.toolExecutor.updateAutoApprovalSettings(settings)
 	}
 
-	async restoreCheckpoint(messageTs: number, restoreType: ClineCheckpointRestore, offset?: number) {
-		const clineMessages = this.messageStateHandler.getClineMessages()
-		const messageIndex = clineMessages.findIndex((m) => m.ts === messageTs) - (offset || 0)
+	async restoreCheckpoint(messageTs: number, restoreType: JamilaCheckpointRestore, offset?: number) {
+		const jamMessages = this.messageStateHandler.getJamilaMessages()
+		const messageIndex = jamMessages.findIndex((m) => m.ts === messageTs) - (offset || 0)
 		// Find the last message before messageIndex that has a lastCheckpointHash
-		const lastHashIndex = findLastIndex(clineMessages.slice(0, messageIndex), (m) => m.lastCheckpointHash !== undefined)
-		const message = clineMessages[messageIndex]
-		const lastMessageWithHash = clineMessages[lastHashIndex]
+		const lastHashIndex = findLastIndex(jamMessages.slice(0, messageIndex), (m) => m.lastCheckpointHash !== undefined)
+		const message = jamMessages[messageIndex]
+		const lastMessageWithHash = jamMessages[lastHashIndex]
 
 		if (!message) {
-			console.error("Message not found", clineMessages)
+			console.error("Message not found", jamMessages)
 			return
 		}
 
@@ -429,8 +429,8 @@ export class Task {
 					)
 
 					// aggregate deleted api reqs info so we don't lose costs/tokens
-					const clineMessages = this.messageStateHandler.getClineMessages()
-					const deletedMessages = clineMessages.slice(messageIndex + 1)
+					const jamMessages = this.messageStateHandler.getJamilaMessages()
+					const deletedMessages = jamMessages.slice(messageIndex + 1)
 					const deletedApiReqsMetrics = getApiMetrics(combineApiRequests(combineCommandSequences(deletedMessages)))
 
 					// Detect files edited after this message timestamp for file context warning
@@ -445,8 +445,8 @@ export class Task {
 						}
 					}
 
-					const newClineMessages = clineMessages.slice(0, messageIndex + 1)
-					await this.messageStateHandler.overwriteClineMessages(newClineMessages) // calls saveClineMessages which saves historyItem
+					const newJamilaMessages = jamMessages.slice(0, messageIndex + 1)
+					await this.messageStateHandler.overwriteJamilaMessages(newJamilaMessages) // calls saveJamilaMessages which saves historyItem
 
 					await this.say(
 						"deleted_api_reqs",
@@ -456,7 +456,7 @@ export class Task {
 							cacheWrites: deletedApiReqsMetrics.totalCacheWrites,
 							cacheReads: deletedApiReqsMetrics.totalCacheReads,
 							cost: deletedApiReqsMetrics.totalCost,
-						} satisfies ClineApiReqInfo),
+						} satisfies JamilaApiReqInfo),
 					)
 					break
 				case "workspace":
@@ -479,7 +479,7 @@ export class Task {
 				// Set isCheckpointCheckedOut flag on the message
 				// Find all checkpoint messages before this one
 				const checkpointMessages = this.messageStateHandler
-					.getClineMessages()
+					.getJamilaMessages()
 					.filter((m) => m.say === "checkpoint_created")
 				const currentMessageIndex = checkpointMessages.findIndex((m) => m.ts === messageTs)
 
@@ -489,7 +489,7 @@ export class Task {
 				})
 			}
 
-			await this.messageStateHandler.saveClineMessagesAndUpdateHistory()
+			await this.messageStateHandler.saveJamilaMessagesAndUpdateHistory()
 
 			this.cancelTask() // the task is already cancelled by the provider beforehand, but we need to re-init to get the updated messages
 		} else {
@@ -508,9 +508,9 @@ export class Task {
 		}
 
 		console.log("presentMultifileDiff", messageTs)
-		const clineMessages = this.messageStateHandler.getClineMessages()
-		const messageIndex = clineMessages.findIndex((m) => m.ts === messageTs)
-		const message = clineMessages[messageIndex]
+		const jamMessages = this.messageStateHandler.getJamilaMessages()
+		const messageIndex = jamMessages.findIndex((m) => m.ts === messageTs)
+		const message = jamMessages[messageIndex]
 		if (!message) {
 			console.error("Message not found")
 			relinquishButton()
@@ -556,7 +556,7 @@ export class Task {
 			if (seeNewChangesSinceLastTaskCompletion) {
 				// Get last task completed
 				const lastTaskCompletedMessageCheckpointHash = findLast(
-					this.messageStateHandler.getClineMessages().slice(0, messageIndex),
+					this.messageStateHandler.getJamilaMessages().slice(0, messageIndex),
 					(m) => m.say === "completion_result",
 				)?.lastCheckpointHash // ask is only used to relinquish control, its the last say we care about
 				// if undefined, then we get diff from beginning of git
@@ -566,7 +566,7 @@ export class Task {
 				// }
 				// This value *should* always exist
 				const firstCheckpointMessageCheckpointHash = this.messageStateHandler
-					.getClineMessages()
+					.getJamilaMessages()
 					.find((m) => m.say === "checkpoint_created")?.lastCheckpointHash
 
 				const previousCheckpointHash = lastTaskCompletedMessageCheckpointHash || firstCheckpointMessageCheckpointHash // either use the diff between the first checkpoint and the task completion, or the diff between the latest two task completions
@@ -633,9 +633,9 @@ export class Task {
 			return false
 		}
 
-		const clineMessages = this.messageStateHandler.getClineMessages()
-		const messageIndex = findLastIndex(clineMessages, (m) => m.say === "completion_result")
-		const message = clineMessages[messageIndex]
+		const jamMessages = this.messageStateHandler.getJamilaMessages()
+		const messageIndex = findLastIndex(jamMessages, (m) => m.say === "completion_result")
+		const message = jamMessages[messageIndex]
 		if (!message) {
 			console.error("Completion message not found")
 			return false
@@ -663,7 +663,7 @@ export class Task {
 
 		// Get last task completed
 		const lastTaskCompletedMessage = findLast(
-			this.messageStateHandler.getClineMessages().slice(0, messageIndex),
+			this.messageStateHandler.getJamilaMessages().slice(0, messageIndex),
 			(m) => m.say === "completion_result",
 		)
 
@@ -677,7 +677,7 @@ export class Task {
 			// }
 			// This value *should* always exist
 			const firstCheckpointMessageCheckpointHash = this.messageStateHandler
-				.getClineMessages()
+				.getJamilaMessages()
 				.find((m) => m.say === "checkpoint_created")?.lastCheckpointHash
 
 			const previousCheckpointHash = lastTaskCompletedMessageCheckpointHash || firstCheckpointMessageCheckpointHash // either use the diff between the first checkpoint and the task completion, or the diff between the latest two task completions
@@ -703,37 +703,37 @@ export class Task {
 
 	// partial has three valid states true (partial message), false (completion of partial message), undefined (individual complete message)
 	async ask(
-		type: ClineAsk,
+		type: JamilaAsk,
 		text?: string,
 		partial?: boolean,
 	): Promise<{
-		response: ClineAskResponse
+		response: JamilaAskResponse
 		text?: string
 		images?: string[]
 		files?: string[]
 	}> {
-		// If this Cline instance was aborted by the provider, then the only thing keeping us alive is a promise still running in the background, in which case we don't want to send its result to the webview as it is attached to a new instance of Cline now. So we can safely ignore the result of any active promises, and this class will be deallocated. (Although we set Cline = undefined in provider, that simply removes the reference to this instance, but the instance is still alive until this promise resolves or rejects.)
+		// If this Jamila instance was aborted by the provider, then the only thing keeping us alive is a promise still running in the background, in which case we don't want to send its result to the webview as it is attached to a new instance of Jamila now. So we can safely ignore the result of any active promises, and this class will be deallocated. (Although we set Jamila = undefined in provider, that simply removes the reference to this instance, but the instance is still alive until this promise resolves or rejects.)
 		if (this.taskState.abort) {
-			throw new Error("Cline instance aborted")
+			throw new Error("Jamila instance aborted")
 		}
 		let askTs: number
 		if (partial !== undefined) {
-			const clineMessages = this.messageStateHandler.getClineMessages()
-			const lastMessage = clineMessages.at(-1)
-			const lastMessageIndex = clineMessages.length - 1
+			const jamMessages = this.messageStateHandler.getJamilaMessages()
+			const lastMessage = jamMessages.at(-1)
+			const lastMessageIndex = jamMessages.length - 1
 			const isUpdatingPreviousPartial =
 				lastMessage && lastMessage.partial && lastMessage.type === "ask" && lastMessage.ask === type
 			if (partial) {
 				if (isUpdatingPreviousPartial) {
 					// existing partial message, so update it
-					await this.messageStateHandler.updateClineMessage(lastMessageIndex, {
+					await this.messageStateHandler.updateJamilaMessage(lastMessageIndex, {
 						text,
 						partial,
 					})
 					// todo be more efficient about saving and posting only new data or one whole message at a time so ignore partial for saves, and only post parts of partial message instead of whole array in new listener
-					// await this.saveClineMessagesAndUpdateHistory()
+					// await this.saveJamilaMessagesAndUpdateHistory()
 					// await this.postStateToWebview()
-					const protoMessage = convertClineMessageToProto(lastMessage)
+					const protoMessage = convertJamilaMessageToProto(lastMessage)
 					await sendPartialMessageEvent(protoMessage)
 					throw new Error("Current ask promise was ignored 1")
 				} else {
@@ -743,7 +743,7 @@ export class Task {
 					// this.askResponseImages = undefined
 					askTs = Date.now()
 					this.taskState.lastMessageTs = askTs
-					await this.messageStateHandler.addToClineMessages({
+					await this.messageStateHandler.addToJamilaMessages({
 						ts: askTs,
 						type: "ask",
 						ask: type,
@@ -771,12 +771,12 @@ export class Task {
 					askTs = lastMessage.ts
 					this.taskState.lastMessageTs = askTs
 					// lastMessage.ts = askTs
-					await this.messageStateHandler.updateClineMessage(lastMessageIndex, {
+					await this.messageStateHandler.updateJamilaMessage(lastMessageIndex, {
 						text,
 						partial: false,
 					})
 					// await this.postStateToWebview()
-					const protoMessage = convertClineMessageToProto(lastMessage)
+					const protoMessage = convertJamilaMessageToProto(lastMessage)
 					await sendPartialMessageEvent(protoMessage)
 				} else {
 					// this is a new partial=false message, so add it like normal
@@ -786,7 +786,7 @@ export class Task {
 					this.taskState.askResponseFiles = undefined
 					askTs = Date.now()
 					this.taskState.lastMessageTs = askTs
-					await this.messageStateHandler.addToClineMessages({
+					await this.messageStateHandler.addToJamilaMessages({
 						ts: askTs,
 						type: "ask",
 						ask: type,
@@ -797,14 +797,14 @@ export class Task {
 			}
 		} else {
 			// this is a new non-partial message, so add it like normal
-			// const lastMessage = this.clineMessages.at(-1)
+			// const lastMessage = this.jamMessages.at(-1)
 			this.taskState.askResponse = undefined
 			this.taskState.askResponseText = undefined
 			this.taskState.askResponseImages = undefined
 			this.taskState.askResponseFiles = undefined
 			askTs = Date.now()
 			this.taskState.lastMessageTs = askTs
-			await this.messageStateHandler.addToClineMessages({
+			await this.messageStateHandler.addToJamilaMessages({
 				ts: askTs,
 				type: "ask",
 				ask: type,
@@ -832,20 +832,20 @@ export class Task {
 		return result
 	}
 
-	async handleWebviewAskResponse(askResponse: ClineAskResponse, text?: string, images?: string[], files?: string[]) {
+	async handleWebviewAskResponse(askResponse: JamilaAskResponse, text?: string, images?: string[], files?: string[]) {
 		this.taskState.askResponse = askResponse
 		this.taskState.askResponseText = text
 		this.taskState.askResponseImages = images
 		this.taskState.askResponseFiles = files
 	}
 
-	async say(type: ClineSay, text?: string, images?: string[], files?: string[], partial?: boolean): Promise<undefined> {
+	async say(type: JamilaSay, text?: string, images?: string[], files?: string[], partial?: boolean): Promise<undefined> {
 		if (this.taskState.abort) {
-			throw new Error("Cline instance aborted")
+			throw new Error("Jamila instance aborted")
 		}
 
 		if (partial !== undefined) {
-			const lastMessage = this.messageStateHandler.getClineMessages().at(-1)
+			const lastMessage = this.messageStateHandler.getJamilaMessages().at(-1)
 			const isUpdatingPreviousPartial =
 				lastMessage && lastMessage.partial && lastMessage.type === "say" && lastMessage.say === type
 			if (partial) {
@@ -855,13 +855,13 @@ export class Task {
 					lastMessage.images = images
 					lastMessage.files = files
 					lastMessage.partial = partial
-					const protoMessage = convertClineMessageToProto(lastMessage)
+					const protoMessage = convertJamilaMessageToProto(lastMessage)
 					await sendPartialMessageEvent(protoMessage)
 				} else {
 					// this is a new partial message, so add it with partial state
 					const sayTs = Date.now()
 					this.taskState.lastMessageTs = sayTs
-					await this.messageStateHandler.addToClineMessages({
+					await this.messageStateHandler.addToJamilaMessages({
 						ts: sayTs,
 						type: "say",
 						say: type,
@@ -884,15 +884,15 @@ export class Task {
 					lastMessage.partial = false
 
 					// instead of streaming partialMessage events, we do a save and post like normal to persist to disk
-					await this.messageStateHandler.saveClineMessagesAndUpdateHistory()
+					await this.messageStateHandler.saveJamilaMessagesAndUpdateHistory()
 					// await this.postStateToWebview()
-					const protoMessage = convertClineMessageToProto(lastMessage)
+					const protoMessage = convertJamilaMessageToProto(lastMessage)
 					await sendPartialMessageEvent(protoMessage) // more performant than an entire postStateToWebview
 				} else {
 					// this is a new partial=false message, so add it like normal
 					const sayTs = Date.now()
 					this.taskState.lastMessageTs = sayTs
-					await this.messageStateHandler.addToClineMessages({
+					await this.messageStateHandler.addToJamilaMessages({
 						ts: sayTs,
 						type: "say",
 						say: type,
@@ -907,7 +907,7 @@ export class Task {
 			// this is a new non-partial message, so add it like normal
 			const sayTs = Date.now()
 			this.taskState.lastMessageTs = sayTs
-			await this.messageStateHandler.addToClineMessages({
+			await this.messageStateHandler.addToJamilaMessages({
 				ts: sayTs,
 				type: "say",
 				say: type,
@@ -922,19 +922,19 @@ export class Task {
 	async sayAndCreateMissingParamError(toolName: ToolUseName, paramName: string, relPath?: string) {
 		await this.say(
 			"error",
-			`Cline tried to use ${toolName}${
+			`Jamila tried to use ${toolName}${
 				relPath ? ` for '${relPath.toPosix()}'` : ""
 			} without value for required parameter '${paramName}'. Retrying...`,
 		)
 		return formatResponse.toolError(formatResponse.missingToolParameterError(paramName))
 	}
 
-	async removeLastPartialMessageIfExistsWithType(type: "ask" | "say", askOrSay: ClineAsk | ClineSay) {
-		const clineMessages = this.messageStateHandler.getClineMessages()
-		const lastMessage = clineMessages.at(-1)
+	async removeLastPartialMessageIfExistsWithType(type: "ask" | "say", askOrSay: JamilaAsk | JamilaSay) {
+		const jamMessages = this.messageStateHandler.getJamilaMessages()
+		const lastMessage = jamMessages.at(-1)
 		if (lastMessage?.partial && lastMessage.type === type && (lastMessage.ask === askOrSay || lastMessage.say === askOrSay)) {
-			this.messageStateHandler.setClineMessages(clineMessages.slice(0, -1))
-			await this.messageStateHandler.saveClineMessagesAndUpdateHistory()
+			this.messageStateHandler.setJamilaMessages(jamMessages.slice(0, -1))
+			await this.messageStateHandler.saveJamilaMessagesAndUpdateHistory()
 		}
 	}
 
@@ -942,14 +942,14 @@ export class Task {
 
 	private async startTask(task?: string, images?: string[], files?: string[]): Promise<void> {
 		try {
-			await this.clineIgnoreController.initialize()
+			await this.jamIgnoreController.initialize()
 		} catch (error) {
-			console.error("Failed to initialize ClineIgnoreController:", error)
+			console.error("Failed to initialize JamilaIgnoreController:", error)
 			// Optionally, inform the user or handle the error appropriately
 		}
-		// conversationHistory (for API) and clineMessages (for webview) need to be in sync
-		// if the extension process were killed, then on restart the clineMessages might not be empty, so we need to set it to [] when we create a new Cline client (otherwise webview would show stale messages from previous session)
-		this.messageStateHandler.setClineMessages([])
+		// conversationHistory (for API) and jamMessages (for webview) need to be in sync
+		// if the extension process were killed, then on restart the jamMessages might not be empty, so we need to set it to [] when we create a new Jamila client (otherwise webview would show stale messages from previous session)
+		this.messageStateHandler.setJamilaMessages([])
 		this.messageStateHandler.setApiConversationHistory([])
 
 		await this.postStateToWebview()
@@ -983,9 +983,9 @@ export class Task {
 
 	private async resumeTaskFromHistory() {
 		try {
-			await this.clineIgnoreController.initialize()
+			await this.jamIgnoreController.initialize()
 		} catch (error) {
-			console.error("Failed to initialize ClineIgnoreController:", error)
+			console.error("Failed to initialize JamilaIgnoreController:", error)
 			// Optionally, inform the user or handle the error appropriately
 		}
 		// UPDATE: we don't need this anymore since most tasks are now created with checkpoints enabled
@@ -995,31 +995,31 @@ export class Task {
 		// 	this.checkpointTrackerErrorMessage = "Checkpoints are only available for new tasks"
 		// }
 
-		const savedClineMessages = await getSavedClineMessages(this.getContext(), this.taskId)
+		const savedJamilaMessages = await getSavedJamilaMessages(this.getContext(), this.taskId)
 
 		// Remove any resume messages that may have been added before
 		const lastRelevantMessageIndex = findLastIndex(
-			savedClineMessages,
+			savedJamilaMessages,
 			(m) => !(m.ask === "resume_task" || m.ask === "resume_completed_task"),
 		)
 		if (lastRelevantMessageIndex !== -1) {
-			savedClineMessages.splice(lastRelevantMessageIndex + 1)
+			savedJamilaMessages.splice(lastRelevantMessageIndex + 1)
 		}
 
 		// since we don't use api_req_finished anymore, we need to check if the last api_req_started has a cost value, if it doesn't and no cancellation reason to present, then we remove it since it indicates an api request without any partial content streamed
-		const lastApiReqStartedIndex = findLastIndex(savedClineMessages, (m) => m.type === "say" && m.say === "api_req_started")
+		const lastApiReqStartedIndex = findLastIndex(savedJamilaMessages, (m) => m.type === "say" && m.say === "api_req_started")
 		if (lastApiReqStartedIndex !== -1) {
-			const lastApiReqStarted = savedClineMessages[lastApiReqStartedIndex]
-			const { cost, cancelReason }: ClineApiReqInfo = JSON.parse(lastApiReqStarted.text || "{}")
+			const lastApiReqStarted = savedJamilaMessages[lastApiReqStartedIndex]
+			const { cost, cancelReason }: JamilaApiReqInfo = JSON.parse(lastApiReqStarted.text || "{}")
 			if (cost === undefined && cancelReason === undefined) {
-				savedClineMessages.splice(lastApiReqStartedIndex, 1)
+				savedJamilaMessages.splice(lastApiReqStartedIndex, 1)
 			}
 		}
 
-		await this.messageStateHandler.overwriteClineMessages(savedClineMessages)
-		this.messageStateHandler.setClineMessages(await getSavedClineMessages(this.getContext(), this.taskId))
+		await this.messageStateHandler.overwriteJamilaMessages(savedJamilaMessages)
+		this.messageStateHandler.setJamilaMessages(await getSavedJamilaMessages(this.getContext(), this.taskId))
 
-		// Now present the cline messages to the user and ask if they want to resume (NOTE: we ran into a bug before where the apiconversationhistory wouldn't be initialized when opening a old task, and it was because we were waiting for resume)
+		// Now present the jam messages to the user and ask if they want to resume (NOTE: we ran into a bug before where the apiconversationhistory wouldn't be initialized when opening a old task, and it was because we were waiting for resume)
 		// This is important in case the user deletes messages without resuming the task first
 		const context = this.getContext()
 		const savedApiConversationHistory = await getSavedApiConversationHistory(context, this.taskId)
@@ -1030,14 +1030,14 @@ export class Task {
 		const taskDir = await ensureTaskDirectoryExists(context, this.taskId)
 		await this.contextManager.initializeContextHistory(await ensureTaskDirectoryExists(this.getContext(), this.taskId))
 
-		const lastClineMessage = this.messageStateHandler
-			.getClineMessages()
+		const lastJamilaMessage = this.messageStateHandler
+			.getJamilaMessages()
 			.slice()
 			.reverse()
 			.find((m) => !(m.ask === "resume_task" || m.ask === "resume_completed_task")) // could be multiple resume tasks
 
-		let askType: ClineAsk
-		if (lastClineMessage?.ask === "completion_result") {
+		let askType: JamilaAsk
+		if (lastJamilaMessage?.ask === "completion_result") {
 			askType = "resume_completed_task"
 		} else {
 			askType = "resume_task"
@@ -1057,7 +1057,7 @@ export class Task {
 			responseFiles = files
 		}
 
-		// need to make sure that the api conversation history can be resumed by the api, even if it goes out of sync with cline messages
+		// need to make sure that the api conversation history can be resumed by the api, even if it goes out of sync with jam messages
 
 		const existingApiConversationHistory: Anthropic.Messages.MessageParam[] = await getSavedApiConversationHistory(
 			this.getContext(),
@@ -1088,7 +1088,7 @@ export class Task {
 		let newUserContent: UserContent = [...modifiedOldUserContent]
 
 		const agoText = (() => {
-			const timestamp = lastClineMessage?.ts ?? Date.now()
+			const timestamp = lastJamilaMessage?.ts ?? Date.now()
 			const now = Date.now()
 			const diff = now - timestamp
 			const minutes = Math.floor(diff / 60000)
@@ -1107,7 +1107,7 @@ export class Task {
 			return "just now"
 		})()
 
-		const wasRecent = lastClineMessage?.ts && Date.now() - lastClineMessage.ts < 30_000
+		const wasRecent = lastJamilaMessage?.ts && Date.now() - lastJamilaMessage.ts < 30_000
 
 		// Check if there are pending file context warnings before calling taskResumption
 		const pendingContextWarning = await this.fileContextTracker.retrieveAndClearPendingFileContextWarning()
@@ -1167,11 +1167,11 @@ export class Task {
 		let nextUserContent = userContent
 		let includeFileDetails = true
 		while (!this.taskState.abort) {
-			const didEndLoop = await this.recursivelyMakeClineRequests(nextUserContent, includeFileDetails)
+			const didEndLoop = await this.recursivelyMakeJamilaRequests(nextUserContent, includeFileDetails)
 			includeFileDetails = false // we only need file details the first time
 
-			//  The way this agentic loop works is that cline will be given a task that he then calls tools to complete. unless there's an attempt_completion call, we keep responding back to him with his tool's responses until he either attempt_completion or does not use anymore tools. If he does not use anymore tools, we ask him to consider if he's completed the task and then call attempt_completion, otherwise proceed with completing the task.
-			// There is a MAX_REQUESTS_PER_TASK limit to prevent infinite requests, but Cline is prompted to finish the task as efficiently as he can.
+			//  The way this agentic loop works is that jam will be given a task that he then calls tools to complete. unless there's an attempt_completion call, we keep responding back to him with his tool's responses until he either attempt_completion or does not use anymore tools. If he does not use anymore tools, we ask him to consider if he's completed the task and then call attempt_completion, otherwise proceed with completing the task.
+			// There is a MAX_REQUESTS_PER_TASK limit to prevent infinite requests, but Jamila is prompted to finish the task as efficiently as he can.
 
 			//const totalCost = this.calculateApiCost(totalInputTokens, totalOutputTokens)
 			if (didEndLoop) {
@@ -1181,7 +1181,7 @@ export class Task {
 			} else {
 				// this.say(
 				// 	"tool",
-				// 	"Cline responded with only text blocks but has not called attempt_completion yet. Forcing him to continue with task..."
+				// 	"Jamila responded with only text blocks but has not called attempt_completion yet. Forcing him to continue with task..."
 				// )
 				nextUserContent = [
 					{
@@ -1199,7 +1199,7 @@ export class Task {
 		this.terminalManager.disposeAll()
 		this.urlContentFetcher.closeBrowser()
 		await this.browserSession.dispose()
-		this.clineIgnoreController.dispose()
+		this.jamIgnoreController.dispose()
 		this.fileContextTracker.dispose()
 		await this.diffViewProvider.revertChanges() // need to await for when we want to make sure directories/files are reverted before re-starting the task from a checkpoint
 
@@ -1215,7 +1215,7 @@ export class Task {
 			return
 		}
 		// Set isCheckpointCheckedOut to false for all checkpoint_created messages
-		this.messageStateHandler.getClineMessages().forEach((message) => {
+		this.messageStateHandler.getJamilaMessages().forEach((message) => {
 			if (message.say === "checkpoint_created") {
 				message.isCheckpointCheckedOut = false
 			}
@@ -1223,7 +1223,7 @@ export class Task {
 
 		if (!isAttemptCompletionMessage) {
 			// ensure we aren't creating a duplicate checkpoint
-			const lastMessage = this.messageStateHandler.getClineMessages().at(-1)
+			const lastMessage = this.messageStateHandler.getJamilaMessages().at(-1)
 			if (lastMessage?.say === "checkpoint_created") {
 				return
 			}
@@ -1245,17 +1245,17 @@ export class Task {
 				}
 			}
 
-			// Create a checkpoint commit and update clineMessages with a commitHash
+			// Create a checkpoint commit and update jamMessages with a commitHash
 			if (this.checkpointTracker) {
 				const commitHash = await this.checkpointTracker.commit()
 				if (commitHash) {
 					await this.say("checkpoint_created")
 					const lastCheckpointMessageIndex = findLastIndex(
-						this.messageStateHandler.getClineMessages(),
+						this.messageStateHandler.getJamilaMessages(),
 						(m) => m.say === "checkpoint_created",
 					)
 					if (lastCheckpointMessageIndex !== -1) {
-						await this.messageStateHandler.updateClineMessage(lastCheckpointMessageIndex, {
+						await this.messageStateHandler.updateJamilaMessage(lastCheckpointMessageIndex, {
 							lastCheckpointHash: commitHash,
 						})
 					}
@@ -1286,12 +1286,12 @@ export class Task {
 
 				// For attempt_completion, find the last completion_result message and set its checkpoint hash. This will be used to present the 'see new changes' button
 				const lastCompletionResultMessage = findLast(
-					this.messageStateHandler.getClineMessages(),
+					this.messageStateHandler.getJamilaMessages(),
 					(m) => m.say === "completion_result" || m.ask === "completion_result",
 				)
 				if (lastCompletionResultMessage) {
 					lastCompletionResultMessage.lastCheckpointHash = commitHash
-					await this.messageStateHandler.saveClineMessagesAndUpdateHistory()
+					await this.messageStateHandler.saveJamilaMessagesAndUpdateHistory()
 				}
 			} else {
 				console.error("Checkpoint tracker does not exist and could not be initialized for attempt completion")
@@ -1302,8 +1302,8 @@ export class Task {
 
 		// Previously we checkpointed every message, but this is excessive and unnecessary.
 		// // Start from the end and work backwards until we find a tool use or another message with a hash
-		// for (let i = this.clineMessages.length - 1; i >= 0; i--) {
-		// 	const message = this.clineMessages[i]
+		// for (let i = this.jamMessages.length - 1; i >= 0; i--) {
+		// 	const message = this.jamMessages[i]
 		// 	if (message.lastCheckpointHash) {
 		// 		// Found a message with a hash, so we can stop
 		// 		break
@@ -1331,7 +1331,7 @@ export class Task {
 		// 	}
 		// }
 		// // Save the updated messages
-		// await this.saveClineMessagesAndUpdateHistory()
+		// await this.saveJamilaMessagesAndUpdateHistory()
 		// }
 	}
 
@@ -1563,7 +1563,7 @@ export class Task {
 	 * Migrates the disableBrowserTool setting from VSCode configuration to browserSettings
 	 */
 	private async migrateDisableBrowserToolSetting(): Promise<void> {
-		const config = vscode.workspace.getConfiguration("cline")
+		const config = vscode.workspace.getConfiguration("jam")
 		const disableBrowserTool = config.get<boolean>("disableBrowserTool")
 
 		if (disableBrowserTool !== undefined) {
@@ -1574,7 +1574,7 @@ export class Task {
 	}
 
 	private async migratePreferredLanguageToolSetting(): Promise<void> {
-		const config = vscode.workspace.getConfiguration("cline")
+		const config = vscode.workspace.getConfiguration("jam")
 		const preferredLanguage = config.get<LanguageDisplay>("preferredLanguage")
 		if (preferredLanguage !== undefined) {
 			this.chatSettings.preferredLanguage = preferredLanguage
@@ -1591,7 +1591,7 @@ export class Task {
 
 		await this.migrateDisableBrowserToolSetting()
 		const disableBrowserTool = this.browserSettings.disableToolUse ?? false
-		// cline browser tool uses image recognition for navigation (requires model image support).
+		// jam browser tool uses image recognition for navigation (requires model image support).
 		const modelSupportsBrowserUse = this.api.getModel().info.supportsImages ?? false
 
 		const supportsBrowserUse = modelSupportsBrowserUse && !disableBrowserTool // only enable browser use if the model supports it and the user hasn't disabled it
@@ -1606,49 +1606,49 @@ export class Task {
 				? `# Preferred Language\n\nSpeak in ${preferredLanguage}.`
 				: ""
 
-		const { globalToggles, localToggles } = await refreshClineRulesToggles(this.getContext(), cwd)
+		const { globalToggles, localToggles } = await refreshJamilaRulesToggles(this.getContext(), cwd)
 		const { windsurfLocalToggles, cursorLocalToggles } = await refreshExternalRulesToggles(this.getContext(), cwd)
 
-		const globalClineRulesFilePath = await ensureRulesDirectoryExists()
-		const globalClineRulesFileInstructions = await getGlobalClineRules(globalClineRulesFilePath, globalToggles)
+		const globalJamilaRulesFilePath = await ensureRulesDirectoryExists()
+		const globalJamilaRulesFileInstructions = await getGlobalJamilaRules(globalJamilaRulesFilePath, globalToggles)
 
-		const localClineRulesFileInstructions = await getLocalClineRules(cwd, localToggles)
+		const localJamilaRulesFileInstructions = await getLocalJamilaRules(cwd, localToggles)
 		const [localCursorRulesFileInstructions, localCursorRulesDirInstructions] = await getLocalCursorRules(
 			cwd,
 			cursorLocalToggles,
 		)
 		const localWindsurfRulesFileInstructions = await getLocalWindsurfRules(cwd, windsurfLocalToggles)
 
-		const clineIgnoreContent = this.clineIgnoreController.clineIgnoreContent
-		let clineIgnoreInstructions: string | undefined
-		if (clineIgnoreContent) {
-			clineIgnoreInstructions = formatResponse.clineIgnoreInstructions(clineIgnoreContent)
+		const jamIgnoreContent = this.jamIgnoreController.jamIgnoreContent
+		let jamIgnoreInstructions: string | undefined
+		if (jamIgnoreContent) {
+			jamIgnoreInstructions = formatResponse.jamIgnoreInstructions(jamIgnoreContent)
 		}
 
 		if (
-			globalClineRulesFileInstructions ||
-			localClineRulesFileInstructions ||
+			globalJamilaRulesFileInstructions ||
+			localJamilaRulesFileInstructions ||
 			localCursorRulesFileInstructions ||
 			localCursorRulesDirInstructions ||
 			localWindsurfRulesFileInstructions ||
-			clineIgnoreInstructions ||
+			jamIgnoreInstructions ||
 			preferredLanguageInstructions
 		) {
 			// altering the system prompt mid-task will break the prompt cache, but in the grand scheme this will not change often so it's better to not pollute user messages with it the way we have to with <potentially relevant details>
 			const userInstructions = addUserInstructions(
-				globalClineRulesFileInstructions,
-				localClineRulesFileInstructions,
+				globalJamilaRulesFileInstructions,
+				localJamilaRulesFileInstructions,
 				localCursorRulesFileInstructions,
 				localCursorRulesDirInstructions,
 				localWindsurfRulesFileInstructions,
-				clineIgnoreInstructions,
+				jamIgnoreInstructions,
 				preferredLanguageInstructions,
 			)
 			systemPrompt += userInstructions
 		}
 		const contextManagementMetadata = await this.contextManager.getNewContextMessagesAndMetadata(
 			this.messageStateHandler.getApiConversationHistory(),
-			this.messageStateHandler.getClineMessages(),
+			this.messageStateHandler.getJamilaMessages(),
 			this.api,
 			this.taskState.conversationHistoryDeletedRange,
 			previousApiReqIndex,
@@ -1657,7 +1657,7 @@ export class Task {
 
 		if (contextManagementMetadata.updatedConversationHistoryDeletedRange) {
 			this.taskState.conversationHistoryDeletedRange = contextManagementMetadata.conversationHistoryDeletedRange
-			await this.messageStateHandler.saveClineMessagesAndUpdateHistory()
+			await this.messageStateHandler.saveJamilaMessagesAndUpdateHistory()
 			// saves task history item which we use to keep track of conversation history deleted range
 		}
 
@@ -1672,7 +1672,7 @@ export class Task {
 			yield firstChunk.value
 			this.taskState.isWaitingForFirstChunk = false
 		} catch (error) {
-			const isOpenRouter = this.api instanceof OpenRouterHandler || this.api instanceof ClineHandler
+			const isOpenRouter = this.api instanceof OpenRouterHandler || this.api instanceof JamilaHandler
 			const isAnthropic = this.api instanceof AnthropicHandler
 			const isOpenRouterContextWindowError = checkIsOpenRouterContextWindowError(error) && isOpenRouter
 			const isAnthropicContextWindowError = checkIsAnthropicContextWindowError(error) && isAnthropic
@@ -1683,7 +1683,7 @@ export class Task {
 					this.taskState.conversationHistoryDeletedRange,
 					"quarter", // Force aggressive truncation
 				)
-				await this.messageStateHandler.saveClineMessagesAndUpdateHistory()
+				await this.messageStateHandler.saveJamilaMessagesAndUpdateHistory()
 				await this.contextManager.triggerApplyStandardContextTruncationNoticeChange(
 					Date.now(),
 					await ensureTaskDirectoryExists(this.getContext(), this.taskId),
@@ -1697,7 +1697,7 @@ export class Task {
 						this.taskState.conversationHistoryDeletedRange,
 						"quarter", // Force aggressive truncation
 					)
-					await this.messageStateHandler.saveClineMessagesAndUpdateHistory()
+					await this.messageStateHandler.saveJamilaMessagesAndUpdateHistory()
 					await this.contextManager.triggerApplyStandardContextTruncationNoticeChange(
 						Date.now(),
 						await ensureTaskDirectoryExists(this.getContext(), this.taskId),
@@ -1729,20 +1729,20 @@ export class Task {
 
 				// Update the 'api_req_started' message to reflect final failure before asking user to manually retry
 				const lastApiReqStartedIndex = findLastIndex(
-					this.messageStateHandler.getClineMessages(),
+					this.messageStateHandler.getJamilaMessages(),
 					(m) => m.say === "api_req_started",
 				)
 				if (lastApiReqStartedIndex !== -1) {
-					const clineMessages = this.messageStateHandler.getClineMessages()
-					const currentApiReqInfo: ClineApiReqInfo = JSON.parse(clineMessages[lastApiReqStartedIndex].text || "{}")
+					const jamMessages = this.messageStateHandler.getJamilaMessages()
+					const currentApiReqInfo: JamilaApiReqInfo = JSON.parse(jamMessages[lastApiReqStartedIndex].text || "{}")
 					delete currentApiReqInfo.retryStatus
 
-					await this.messageStateHandler.updateClineMessage(lastApiReqStartedIndex, {
+					await this.messageStateHandler.updateJamilaMessage(lastApiReqStartedIndex, {
 						text: JSON.stringify({
 							...currentApiReqInfo, // Spread the modified info (with retryStatus removed)
 							cancelReason: "retries_exhausted", // Indicate that automatic retries failed
 							streamingFailedMessage: errorMessage,
-						} satisfies ClineApiReqInfo),
+						} satisfies JamilaApiReqInfo),
 					})
 					// this.ask will trigger postStateToWebview, so this change should be picked up.
 				}
@@ -1769,7 +1769,7 @@ export class Task {
 
 	async presentAssistantMessage() {
 		if (this.taskState.abort) {
-			throw new Error("Cline instance aborted")
+			throw new Error("Jamila instance aborted")
 		}
 
 		if (this.taskState.presentAssistantMessageLocked) {
@@ -1883,9 +1883,9 @@ export class Task {
 		}
 	}
 
-	async recursivelyMakeClineRequests(userContent: UserContent, includeFileDetails: boolean = false): Promise<boolean> {
+	async recursivelyMakeJamilaRequests(userContent: UserContent, includeFileDetails: boolean = false): Promise<boolean> {
 		if (this.taskState.abort) {
-			throw new Error("Cline instance aborted")
+			throw new Error("Jamila instance aborted")
 		}
 
 		// Used to know what models were used in the task if user wants to export metadata for error reporting purposes
@@ -1900,14 +1900,14 @@ export class Task {
 			if (this.autoApprovalSettings.enabled && this.autoApprovalSettings.enableNotifications) {
 				showSystemNotification({
 					subtitle: "Error",
-					message: "Cline is having trouble. Would you like to continue the task?",
+					message: "Jamila is having trouble. Would you like to continue the task?",
 				})
 			}
 			const { response, text, images, files } = await this.ask(
 				"mistake_limit_reached",
 				this.api.getModel().id.includes("claude")
 					? `This may indicate a failure in his thought process or inability to use a tool properly, which can be mitigated with some user guidance (e.g. "Try breaking down the task into smaller steps").`
-					: "Cline uses complex prompts and iterative task execution that may be challenging for less capable models. For best results, it's recommended to use Claude 4 Sonnet for its advanced agentic coding capabilities.",
+					: "Jamila uses complex prompts and iterative task execution that may be challenging for less capable models. For best results, it's recommended to use Claude 4 Sonnet for its advanced agentic coding capabilities.",
 			)
 			if (response === "messageResponse") {
 				// This userContent is for the *next* API call.
@@ -1944,22 +1944,22 @@ export class Task {
 			if (this.autoApprovalSettings.enableNotifications) {
 				showSystemNotification({
 					subtitle: "Max Requests Reached",
-					message: `Cline has auto-approved ${this.autoApprovalSettings.maxRequests.toString()} API requests.`,
+					message: `Jamila has auto-approved ${this.autoApprovalSettings.maxRequests.toString()} API requests.`,
 				})
 			}
 			await this.ask(
 				"auto_approval_max_req_reached",
-				`Cline has auto-approved ${this.autoApprovalSettings.maxRequests.toString()} API requests. Would you like to reset the count and proceed with the task?`,
+				`Jamila has auto-approved ${this.autoApprovalSettings.maxRequests.toString()} API requests. Would you like to reset the count and proceed with the task?`,
 			)
 			// if we get past the promise it means the user approved and did not start a new task
 			this.taskState.consecutiveAutoApprovedRequestsCount = 0
 		}
 
 		// get previous api req's index to check token usage and determine if we need to truncate conversation history
-		const previousApiReqIndex = findLastIndex(this.messageStateHandler.getClineMessages(), (m) => m.say === "api_req_started")
+		const previousApiReqIndex = findLastIndex(this.messageStateHandler.getJamilaMessages(), (m) => m.say === "api_req_started")
 
 		// Save checkpoint if this is the first API request
-		const isFirstRequest = this.messageStateHandler.getClineMessages().filter((m) => m.say === "api_req_started").length === 0
+		const isFirstRequest = this.messageStateHandler.getJamilaMessages().filter((m) => m.say === "api_req_started").length === 0
 
 		// getting verbose details is an expensive operation, it uses globby to top-down build file structure of project which for large projects can take a few seconds
 		// for the best UX we show a placeholder api_req_started message with a loading spinner as this happens
@@ -1983,13 +1983,13 @@ export class Task {
 					{
 						milliseconds: 15_000,
 						message:
-							"Checkpoints taking too long to initialize. Consider re-opening Cline in a project that uses git, or disabling checkpoints.",
+							"Checkpoints taking too long to initialize. Consider re-opening Jamila in a project that uses git, or disabling checkpoints.",
 					},
 				)
 			} catch (error) {
 				const errorMessage = error instanceof Error ? error.message : "Unknown error"
 				console.error("Failed to initialize checkpoint tracker:", errorMessage)
-				this.taskState.checkpointTrackerErrorMessage = errorMessage // will be displayed right away since we saveClineMessages next which posts state to webview
+				this.taskState.checkpointTrackerErrorMessage = errorMessage // will be displayed right away since we saveJamilaMessages next which posts state to webview
 			}
 		}
 
@@ -1999,14 +1999,14 @@ export class Task {
 			const commitHash = await this.checkpointTracker.commit() // Actual commit
 			await this.say("checkpoint_created") // Now this is conditional
 			const lastCheckpointMessageIndex = findLastIndex(
-				this.messageStateHandler.getClineMessages(),
+				this.messageStateHandler.getJamilaMessages(),
 				(m) => m.say === "checkpoint_created",
 			)
 			if (lastCheckpointMessageIndex !== -1) {
-				await this.messageStateHandler.updateClineMessage(lastCheckpointMessageIndex, {
+				await this.messageStateHandler.updateJamilaMessage(lastCheckpointMessageIndex, {
 					lastCheckpointHash: commitHash,
 				})
-				// saveClineMessagesAndUpdateHistory will be called later after API response,
+				// saveJamilaMessagesAndUpdateHistory will be called later after API response,
 				// so no need to call it here unless this is the only modification to this message.
 				// For now, assuming it's handled later.
 			}
@@ -2021,13 +2021,13 @@ export class Task {
 			// No explicit UI message here, error message will be in ExtensionState.
 		}
 
-		const [parsedUserContent, environmentDetails, clinerulesError] = await this.loadContext(userContent, includeFileDetails)
+		const [parsedUserContent, environmentDetails, jamrulesError] = await this.loadContext(userContent, includeFileDetails)
 
-		// error handling if the user uses the /newrule command & their .clinerules is a file, for file read operations didnt work properly
-		if (clinerulesError === true) {
+		// error handling if the user uses the /newrule command & their .jamrules is a file, for file read operations didnt work properly
+		if (jamrulesError === true) {
 			await this.say(
 				"error",
-				"Issue with processing the /newrule command. Double check that, if '.clinerules' already exists, it's a directory and not a file. Otherwise there was an issue referencing this file/directory.",
+				"Issue with processing the /newrule command. Double check that, if '.jamrules' already exists, it's a directory and not a file. Otherwise there was an issue referencing this file/directory.",
 			)
 		}
 
@@ -2043,11 +2043,11 @@ export class Task {
 		telemetryService.captureConversationTurnEvent(this.taskId, currentProviderId, this.api.getModel().id, "user", true)
 
 		// since we sent off a placeholder api_req_started message to update the webview while waiting to actually start the API request (to load potential details for example), we need to update the text of that message
-		const lastApiReqIndex = findLastIndex(this.messageStateHandler.getClineMessages(), (m) => m.say === "api_req_started")
-		await this.messageStateHandler.updateClineMessage(lastApiReqIndex, {
+		const lastApiReqIndex = findLastIndex(this.messageStateHandler.getJamilaMessages(), (m) => m.say === "api_req_started")
+		await this.messageStateHandler.updateJamilaMessage(lastApiReqIndex, {
 			text: JSON.stringify({
 				request: userContent.map((block) => formatContentBlockToMarkdown(block)).join("\n\n"),
-			} satisfies ClineApiReqInfo),
+			} satisfies JamilaApiReqInfo),
 		})
 		await this.postStateToWebview()
 
@@ -2058,19 +2058,19 @@ export class Task {
 			let outputTokens = 0
 			let totalCost: number | undefined
 
-			const abortStream = async (cancelReason: ClineApiReqCancelReason, streamingFailedMessage?: string) => {
+			const abortStream = async (cancelReason: JamilaApiReqCancelReason, streamingFailedMessage?: string) => {
 				if (this.diffViewProvider.isEditing) {
 					await this.diffViewProvider.revertChanges() // closes diff view
 				}
 
 				// if last message is a partial we need to update and save it
-				const lastMessage = this.messageStateHandler.getClineMessages().at(-1)
+				const lastMessage = this.messageStateHandler.getJamilaMessages().at(-1)
 				if (lastMessage && lastMessage.partial) {
 					// lastMessage.ts = Date.now() DO NOT update ts since it is used as a key for virtuoso list
 					lastMessage.partial = false
 					// instead of streaming partialMessage events, we do a save and post like normal to persist to disk
 					console.log("updating partial message", lastMessage)
-					// await this.saveClineMessagesAndUpdateHistory()
+					// await this.saveJamilaMessagesAndUpdateHistory()
 				}
 
 				// Let assistant know their response was interrupted for when task is resumed
@@ -2103,7 +2103,7 @@ export class Task {
 					cancelReason,
 					streamingFailedMessage,
 				})
-				await this.messageStateHandler.saveClineMessagesAndUpdateHistory()
+				await this.messageStateHandler.saveJamilaMessagesAndUpdateHistory()
 
 				telemetryService.captureConversationTurnEvent(
 					this.taskId,
@@ -2183,7 +2183,7 @@ export class Task {
 					if (this.taskState.abort) {
 						console.log("aborting stream...")
 						if (!this.taskState.abandoned) {
-							// only need to gracefully abort if this instance isn't abandoned (sometimes openrouter stream hangs, in which case this would affect future instances of cline)
+							// only need to gracefully abort if this instance isn't abandoned (sometimes openrouter stream hangs, in which case this would affect future instances of jam)
 							await abortStream("user_cancelled")
 						}
 						break // aborts the stream
@@ -2205,7 +2205,7 @@ export class Task {
 					}
 				}
 			} catch (error) {
-				// abandoned happens when extension is no longer waiting for the cline instance to finish aborting (error is thrown here when any function in the for loop throws due to this.abort)
+				// abandoned happens when extension is no longer waiting for the jam instance to finish aborting (error is thrown here when any function in the for loop throws due to this.abort)
 				if (!this.taskState.abandoned) {
 					this.abortTask() // if the stream failed, there's various states the task could be in (i.e. could have streamed some tools the user may have executed), so we just resort to replicating a cancel task
 					const errorMessage = formatErrorWithStatusCode(error)
@@ -2217,7 +2217,7 @@ export class Task {
 				this.taskState.isStreaming = false
 			}
 
-			// OpenRouter/Cline may not return token usage as part of the stream (since it may abort early), so we fetch after the stream is finished
+			// OpenRouter/Jamila may not return token usage as part of the stream (since it may abort early), so we fetch after the stream is finished
 			// (updateApiReq below will update the api_req_started message with the usage details. we do this async so it updates the api_req_started message in the background)
 			if (!didReceiveUsageChunk) {
 				this.api.getApiStreamUsage?.().then(async (apiStreamUsage) => {
@@ -2238,14 +2238,14 @@ export class Task {
 						api: this.api,
 						totalCost,
 					})
-					await this.messageStateHandler.saveClineMessagesAndUpdateHistory()
+					await this.messageStateHandler.saveJamilaMessagesAndUpdateHistory()
 					await this.postStateToWebview()
 				})
 			}
 
 			// need to call here in case the stream was aborted
 			if (this.taskState.abort) {
-				throw new Error("Cline instance aborted")
+				throw new Error("Jamila instance aborted")
 			}
 
 			this.taskState.didCompleteReadingStream = true
@@ -2271,7 +2271,7 @@ export class Task {
 				api: this.api,
 				totalCost,
 			})
-			await this.messageStateHandler.saveClineMessagesAndUpdateHistory()
+			await this.messageStateHandler.saveJamilaMessagesAndUpdateHistory()
 			await this.postStateToWebview()
 
 			// now add to apiconversationhistory
@@ -2313,7 +2313,7 @@ export class Task {
 					this.taskState.consecutiveMistakeCount++
 				}
 
-				const recDidEndLoop = await this.recursivelyMakeClineRequests(this.taskState.userMessageContent)
+				const recDidEndLoop = await this.recursivelyMakeJamilaRequests(this.taskState.userMessageContent)
 				didEndLoop = recDidEndLoop
 			} else {
 				// if there's no assistant_responses, that means we got no text or tool_use content blocks from API which we should assume is an error
@@ -2340,8 +2340,8 @@ export class Task {
 	}
 
 	async loadContext(userContent: UserContent, includeFileDetails: boolean = false): Promise<[UserContent, string, boolean]> {
-		// Track if we need to check clinerulesFile
-		let needsClinerulesFileCheck = false
+		// Track if we need to check jamrulesFile
+		let needsJamilarulesFileCheck = false
 
 		const { localWorkflowToggles, globalWorkflowToggles } = await refreshWorkflowToggles(this.getContext(), cwd)
 
@@ -2367,14 +2367,14 @@ export class Task {
 							)
 
 							// when parsing slash commands, we still want to allow the user to provide their desired context
-							const { processedText, needsClinerulesFileCheck: needsCheck } = await parseSlashCommands(
+							const { processedText, needsJamilarulesFileCheck: needsCheck } = await parseSlashCommands(
 								parsedText,
 								localWorkflowToggles,
 								globalWorkflowToggles,
 							)
 
 							if (needsCheck) {
-								needsClinerulesFileCheck = true
+								needsJamilarulesFileCheck = true
 							}
 
 							return {
@@ -2394,28 +2394,28 @@ export class Task {
 			this.getEnvironmentDetails(includeFileDetails),
 		])
 
-		// After processing content, check clinerulesData if needed
-		let clinerulesError = false
-		if (needsClinerulesFileCheck) {
-			clinerulesError = await ensureLocalClineDirExists(cwd, GlobalFileNames.clineRules)
+		// After processing content, check jamrulesData if needed
+		let jamrulesError = false
+		if (needsJamilarulesFileCheck) {
+			jamrulesError = await ensureLocalJamilaDirExists(cwd, GlobalFileNames.jamRules)
 		}
 
 		// Return all results
-		return [processedUserContent, environmentDetails, clinerulesError]
+		return [processedUserContent, environmentDetails, jamrulesError]
 	}
 
 	async getEnvironmentDetails(includeFileDetails: boolean = false) {
 		let details = ""
 
-		// It could be useful for cline to know if the user went from one or no file to another between messages, so we always include this context
+		// It could be useful for jam to know if the user went from one or no file to another between messages, so we always include this context
 		details += "\n\n# VSCode Visible Files"
 		const visibleFilePaths = vscode.window.visibleTextEditors
 			?.map((editor) => editor.document?.uri?.fsPath)
 			.filter(Boolean)
 			.map((absolutePath) => path.relative(cwd, absolutePath))
 
-		// Filter paths through clineIgnoreController
-		const allowedVisibleFiles = this.clineIgnoreController
+		// Filter paths through jamIgnoreController
+		const allowedVisibleFiles = this.jamIgnoreController
 			.filterPaths(visibleFilePaths)
 			.map((p) => p.toPosix())
 			.join("\n")
@@ -2433,8 +2433,8 @@ export class Task {
 			.filter(Boolean)
 			.map((absolutePath) => path.relative(cwd, absolutePath))
 
-		// Filter paths through clineIgnoreController
-		const allowedOpenTabs = this.clineIgnoreController
+		// Filter paths through jamIgnoreController
+		const allowedOpenTabs = this.jamIgnoreController
 			.filterPaths(openTabPaths)
 			.map((p) => p.toPosix())
 			.join("\n")
@@ -2467,7 +2467,7 @@ export class Task {
 		// we want to get diagnostics AFTER terminal cools down for a few reasons: terminal could be scaffolding a project, dev servers (compilers like webpack) will first re-compile and then send diagnostics, etc
 		/*
 		let diagnosticsDetails = ""
-		const diagnostics = await this.diagnosticsMonitor.getCurrentDiagnostics(this.didEditFile || terminalWasBusy) // if cline ran a command (ie npm install) or edited the workspace then wait a bit for updated diagnostics
+		const diagnostics = await this.diagnosticsMonitor.getCurrentDiagnostics(this.didEditFile || terminalWasBusy) // if jam ran a command (ie npm install) or edited the workspace then wait a bit for updated diagnostics
 		for (const [uri, fileDiagnostics] of diagnostics) {
 			const problems = fileDiagnostics.filter((d) => d.severity === vscode.DiagnosticSeverity.Error)
 			if (problems.length > 0) {
@@ -2564,7 +2564,7 @@ export class Task {
 				details += "(Desktop files not shown automatically. Use list_files to explore if needed.)"
 			} else {
 				const [files, didHitLimit] = await listFiles(cwd, true, 200)
-				const result = formatResponse.formatFilesList(cwd, files, didHitLimit, this.clineIgnoreController)
+				const result = formatResponse.formatFilesList(cwd, files, didHitLimit, this.jamIgnoreController)
 				details += result
 			}
 		}
@@ -2573,7 +2573,7 @@ export class Task {
 		const { contextWindow, maxAllowedSize } = getContextWindowInfo(this.api)
 
 		// Get the token count from the most recent API request to accurately reflect context management
-		const getTotalTokensFromApiReqMessage = (msg: ClineMessage) => {
+		const getTotalTokensFromApiReqMessage = (msg: JamilaMessage) => {
 			if (!msg.text) {
 				return 0
 			}
@@ -2585,8 +2585,8 @@ export class Task {
 			}
 		}
 
-		const clineMessages = this.messageStateHandler.getClineMessages()
-		const modifiedMessages = combineApiRequests(combineCommandSequences(clineMessages.slice(1)))
+		const jamMessages = this.messageStateHandler.getJamilaMessages()
+		const modifiedMessages = combineApiRequests(combineCommandSequences(jamMessages.slice(1)))
 		const lastApiReqMessage = findLast(modifiedMessages, (msg) => {
 			if (msg.say !== "api_req_started") {
 				return false

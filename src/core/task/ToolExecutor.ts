@@ -7,7 +7,7 @@ import { BrowserSession } from "@services/browser/BrowserSession"
 import { DiffViewProvider } from "@integrations/editor/DiffViewProvider"
 import { McpHub } from "@services/mcp/McpHub"
 import { FileContextTracker } from "@core/context/context-tracking/FileContextTracker"
-import { ClineIgnoreController } from "@core/ignore/ClineIgnoreController"
+import { JamilaIgnoreController } from "@core/ignore/JamilaIgnoreController"
 import { AutoApprovalSettings } from "@shared/AutoApprovalSettings"
 import { ChatSettings } from "@shared/ChatSettings"
 import { ToolParamName, ToolUse, ToolUseName } from "../assistant-message"
@@ -16,18 +16,18 @@ import {
 	BrowserAction,
 	BrowserActionResult,
 	browserActions,
-	ClineAsk,
-	ClineAskQuestion,
-	ClineAskUseMcpServer,
-	ClinePlanModeResponse,
-	ClineSay,
-	ClineSayBrowserAction,
-	ClineSayTool,
+	JamilaAsk,
+	JamilaAskQuestion,
+	JamilaAskUseMcpServer,
+	JamilaPlanModeResponse,
+	JamilaSay,
+	JamilaSayBrowserAction,
+	JamilaSayTool,
 	COMPLETION_RESULT_CHANGES_FLAG,
 } from "@shared/ExtensionMessage"
 import WorkspaceTracker from "@integrations/workspace/WorkspaceTracker"
 import { BrowserSettings } from "@shared/BrowserSettings"
-import { ClineAskResponse } from "@shared/WebviewMessage"
+import { JamilaAskResponse } from "@shared/WebviewMessage"
 import { fixModelHtmlEscaping, removeInvalidChars } from "@utils/string"
 import { fileExistsAtPath } from "@utils/fs"
 import { formatResponse } from "../prompts/responses"
@@ -81,7 +81,7 @@ export class ToolExecutor {
 		private diffViewProvider: DiffViewProvider,
 		private mcpHub: McpHub,
 		private fileContextTracker: FileContextTracker,
-		private clineIgnoreController: ClineIgnoreController,
+		private jamIgnoreController: JamilaIgnoreController,
 		private workspaceTracker: WorkspaceTracker,
 		private contextManager: ContextManager,
 
@@ -94,22 +94,22 @@ export class ToolExecutor {
 
 		// Callbacks to the Task (Entity)
 		private say: (
-			type: ClineSay,
+			type: JamilaSay,
 			text?: string,
 			images?: string[],
 			files?: string[],
 			partial?: boolean,
 		) => Promise<undefined>,
 		private ask: (
-			type: ClineAsk,
+			type: JamilaAsk,
 			text?: string,
 			partial?: boolean,
-		) => Promise<{ response: ClineAskResponse; text?: string; images?: string[]; files?: string[] }>,
+		) => Promise<{ response: JamilaAskResponse; text?: string; images?: string[]; files?: string[] }>,
 		private saveCheckpoint: (isAttemptCompletionMessage?: boolean) => Promise<void>,
 		private reinitExistingTaskFromId: (taskId: string) => Promise<void>,
 		private cancelTask: () => Promise<void>,
 		private sayAndCreateMissingParamError: (toolName: ToolUseName, paramName: string, relPath?: string) => Promise<any>,
-		private removeLastPartialMessageIfExistsWithType: (type: "ask" | "say", askOrSay: ClineAsk | ClineSay) => Promise<void>,
+		private removeLastPartialMessageIfExistsWithType: (type: "ask" | "say", askOrSay: JamilaAsk | JamilaSay) => Promise<void>,
 		private executeCommandTool: (command: string) => Promise<[boolean, any]>,
 		private doesLatestTaskCompletionHaveNewChanges: () => Promise<boolean>,
 	) {
@@ -218,7 +218,7 @@ export class ToolExecutor {
 		}
 	}
 
-	private askApproval = async (type: ClineAsk, block: ToolUse, partialMessage: string) => {
+	private askApproval = async (type: JamilaAsk, block: ToolUse, partialMessage: string) => {
 		const { response, text, images, files } = await this.ask(type, partialMessage, false)
 		if (response !== "yesButtonClicked") {
 			// User pressed reject button or responded with a message, which we treat as a rejection
@@ -454,10 +454,10 @@ export class ToolExecutor {
 					break
 				}
 
-				const accessAllowed = this.clineIgnoreController.validateAccess(relPath)
+				const accessAllowed = this.jamIgnoreController.validateAccess(relPath)
 				if (!accessAllowed) {
-					await this.say("clineignore_error", relPath)
-					this.pushToolResult(formatResponse.toolError(formatResponse.clineIgnoreError(relPath)), block)
+					await this.say("jamignore_error", relPath)
+					this.pushToolResult(formatResponse.toolError(formatResponse.jamIgnoreError(relPath)), block)
 					await this.saveCheckpoint()
 					break
 				}
@@ -483,7 +483,7 @@ export class ToolExecutor {
 							diff = removeInvalidChars(diff)
 						}
 
-						// open the editor if not done already.  This is to fix diff error when model provides correct search-replace text but Cline throws error
+						// open the editor if not done already.  This is to fix diff error when model provides correct search-replace text but Jamila throws error
 						// because file is not open.
 						if (!this.diffViewProvider.isEditing) {
 							await this.diffViewProvider.open(relPath)
@@ -570,7 +570,7 @@ export class ToolExecutor {
 
 					newContent = newContent.trimEnd() // remove any trailing newlines, since it's automatically inserted by the editor
 
-					const sharedMessageProps: ClineSayTool = {
+					const sharedMessageProps: JamilaSayTool = {
 						tool: fileExists ? "editedExistingFile" : "newFileCreated",
 						path: getReadablePath(this.cwd, this.removeClosingTag(block, "path", relPath)),
 						content: diff || content,
@@ -652,7 +652,7 @@ export class ToolExecutor {
 							// 		newContent,
 							// 	)
 							// : undefined,
-						} satisfies ClineSayTool)
+						} satisfies JamilaSayTool)
 						if (this.shouldAutoApproveToolWithPath(block.name, relPath)) {
 							this.removeLastPartialMessageIfExistsWithType("ask", "tool")
 							await this.say("tool", completeMessage, undefined, undefined, false)
@@ -664,7 +664,7 @@ export class ToolExecutor {
 						} else {
 							// If auto-approval is enabled but this tool wasn't auto-approved, send notification
 							showNotificationForApprovalIfAutoApprovalEnabled(
-								`Cline wants to ${fileExists ? "edit" : "create"} ${path.basename(relPath)}`,
+								`Jamila wants to ${fileExists ? "edit" : "create"} ${path.basename(relPath)}`,
 								this.autoApprovalSettings.enabled,
 								this.autoApprovalSettings.enableNotifications,
 							)
@@ -715,15 +715,15 @@ export class ToolExecutor {
 							}
 						}
 
-						// Mark the file as edited by Cline to prevent false "recently modified" warnings
-						this.fileContextTracker.markFileAsEditedByCline(relPath)
+						// Mark the file as edited by Jamila to prevent false "recently modified" warnings
+						this.fileContextTracker.markFileAsEditedByJamila(relPath)
 
 						const { newProblemsMessage, userEdits, autoFormattingEdits, finalContent } =
 							await this.diffViewProvider.saveChanges()
 						this.taskState.didEditFile = true // used to determine if we should wait for busy terminal to update before sending api request
 
 						// Track file edit operation
-						await this.fileContextTracker.trackFileContext(relPath, "cline_edited")
+						await this.fileContextTracker.trackFileContext(relPath, "jam_edited")
 
 						if (userEdits) {
 							// Track file edit operation
@@ -735,7 +735,7 @@ export class ToolExecutor {
 									tool: fileExists ? "editedExistingFile" : "newFileCreated",
 									path: getReadablePath(this.cwd, relPath),
 									diff: userEdits,
-								} satisfies ClineSayTool),
+								} satisfies JamilaSayTool),
 							)
 							this.pushToolResult(
 								formatResponse.fileEditWithUserChanges(
@@ -779,7 +779,7 @@ export class ToolExecutor {
 			}
 			case "read_file": {
 				const relPath: string | undefined = block.params.path
-				const sharedMessageProps: ClineSayTool = {
+				const sharedMessageProps: JamilaSayTool = {
 					tool: "readFile",
 					path: getReadablePath(this.cwd, this.removeClosingTag(block, "path", relPath)),
 				}
@@ -789,7 +789,7 @@ export class ToolExecutor {
 							...sharedMessageProps,
 							content: undefined,
 							operationIsLocatedInWorkspace: isLocatedInWorkspace(relPath),
-						} satisfies ClineSayTool)
+						} satisfies JamilaSayTool)
 						if (this.shouldAutoApproveToolWithPath(block.name, block.params.path)) {
 							this.removeLastPartialMessageIfExistsWithType("ask", "tool")
 							await this.say("tool", partialMessage, undefined, undefined, block.partial)
@@ -806,10 +806,10 @@ export class ToolExecutor {
 							break
 						}
 
-						const accessAllowed = this.clineIgnoreController.validateAccess(relPath)
+						const accessAllowed = this.jamIgnoreController.validateAccess(relPath)
 						if (!accessAllowed) {
-							await this.say("clineignore_error", relPath)
-							this.pushToolResult(formatResponse.toolError(formatResponse.clineIgnoreError(relPath)), block)
+							await this.say("jamignore_error", relPath)
+							this.pushToolResult(formatResponse.toolError(formatResponse.jamIgnoreError(relPath)), block)
 							await this.saveCheckpoint()
 							break
 						}
@@ -820,7 +820,7 @@ export class ToolExecutor {
 							...sharedMessageProps,
 							content: absolutePath,
 							operationIsLocatedInWorkspace: isLocatedInWorkspace(relPath),
-						} satisfies ClineSayTool)
+						} satisfies JamilaSayTool)
 						if (this.shouldAutoApproveToolWithPath(block.name, block.params.path)) {
 							this.removeLastPartialMessageIfExistsWithType("ask", "tool")
 							await this.say("tool", completeMessage, undefined, undefined, false) // need to be sending partialValue bool, since undefined has its own purpose in that the message is treated neither as a partial or completion of a partial, but as a single complete message
@@ -828,7 +828,7 @@ export class ToolExecutor {
 							telemetryService.captureToolUsage(this.taskId, block.name, this.api.getModel().id, true, true)
 						} else {
 							showNotificationForApprovalIfAutoApprovalEnabled(
-								`Cline wants to read ${path.basename(absolutePath)}`,
+								`Jamila wants to read ${path.basename(absolutePath)}`,
 								this.autoApprovalSettings.enabled,
 								this.autoApprovalSettings.enableNotifications,
 							)
@@ -861,7 +861,7 @@ export class ToolExecutor {
 				const relDirPath: string | undefined = block.params.path
 				const recursiveRaw: string | undefined = block.params.recursive
 				const recursive = recursiveRaw?.toLowerCase() === "true"
-				const sharedMessageProps: ClineSayTool = {
+				const sharedMessageProps: JamilaSayTool = {
 					tool: !recursive ? "listFilesTopLevel" : "listFilesRecursive",
 					path: getReadablePath(this.cwd, this.removeClosingTag(block, "path", relDirPath)),
 				}
@@ -871,7 +871,7 @@ export class ToolExecutor {
 							...sharedMessageProps,
 							content: "",
 							operationIsLocatedInWorkspace: isLocatedInWorkspace(block.params.path),
-						} satisfies ClineSayTool)
+						} satisfies JamilaSayTool)
 						if (this.shouldAutoApproveToolWithPath(block.name, block.params.path)) {
 							this.removeLastPartialMessageIfExistsWithType("ask", "tool")
 							await this.say("tool", partialMessage, undefined, undefined, block.partial)
@@ -897,13 +897,13 @@ export class ToolExecutor {
 							absolutePath,
 							files,
 							didHitLimit,
-							this.clineIgnoreController,
+							this.jamIgnoreController,
 						)
 						const completeMessage = JSON.stringify({
 							...sharedMessageProps,
 							content: result,
 							operationIsLocatedInWorkspace: isLocatedInWorkspace(block.params.path),
-						} satisfies ClineSayTool)
+						} satisfies JamilaSayTool)
 						if (this.shouldAutoApproveToolWithPath(block.name, block.params.path)) {
 							this.removeLastPartialMessageIfExistsWithType("ask", "tool")
 							await this.say("tool", completeMessage, undefined, undefined, false)
@@ -911,7 +911,7 @@ export class ToolExecutor {
 							telemetryService.captureToolUsage(this.taskId, block.name, this.api.getModel().id, true, true)
 						} else {
 							showNotificationForApprovalIfAutoApprovalEnabled(
-								`Cline wants to view directory ${path.basename(absolutePath)}/`,
+								`Jamila wants to view directory ${path.basename(absolutePath)}/`,
 								this.autoApprovalSettings.enabled,
 								this.autoApprovalSettings.enableNotifications,
 							)
@@ -936,7 +936,7 @@ export class ToolExecutor {
 			}
 			case "list_code_definition_names": {
 				const relDirPath: string | undefined = block.params.path
-				const sharedMessageProps: ClineSayTool = {
+				const sharedMessageProps: JamilaSayTool = {
 					tool: "listCodeDefinitionNames",
 					path: getReadablePath(this.cwd, this.removeClosingTag(block, "path", relDirPath)),
 				}
@@ -946,7 +946,7 @@ export class ToolExecutor {
 							...sharedMessageProps,
 							content: "",
 							operationIsLocatedInWorkspace: isLocatedInWorkspace(block.params.path),
-						} satisfies ClineSayTool)
+						} satisfies JamilaSayTool)
 						if (this.shouldAutoApproveToolWithPath(block.name, block.params.path)) {
 							this.removeLastPartialMessageIfExistsWithType("ask", "tool")
 							await this.say("tool", partialMessage, undefined, undefined, block.partial)
@@ -969,13 +969,13 @@ export class ToolExecutor {
 						this.taskState.consecutiveMistakeCount = 0
 
 						const absolutePath = path.resolve(this.cwd, relDirPath)
-						const result = await parseSourceCodeForDefinitionsTopLevel(absolutePath, this.clineIgnoreController)
+						const result = await parseSourceCodeForDefinitionsTopLevel(absolutePath, this.jamIgnoreController)
 
 						const completeMessage = JSON.stringify({
 							...sharedMessageProps,
 							content: result,
 							operationIsLocatedInWorkspace: isLocatedInWorkspace(block.params.path),
-						} satisfies ClineSayTool)
+						} satisfies JamilaSayTool)
 						if (this.shouldAutoApproveToolWithPath(block.name, block.params.path)) {
 							this.removeLastPartialMessageIfExistsWithType("ask", "tool")
 							await this.say("tool", completeMessage, undefined, undefined, false)
@@ -983,7 +983,7 @@ export class ToolExecutor {
 							telemetryService.captureToolUsage(this.taskId, block.name, this.api.getModel().id, true, true)
 						} else {
 							showNotificationForApprovalIfAutoApprovalEnabled(
-								`Cline wants to view source code definitions in ${path.basename(absolutePath)}/`,
+								`Jamila wants to view source code definitions in ${path.basename(absolutePath)}/`,
 								this.autoApprovalSettings.enabled,
 								this.autoApprovalSettings.enableNotifications,
 							)
@@ -1010,7 +1010,7 @@ export class ToolExecutor {
 				const relDirPath: string | undefined = block.params.path
 				const regex: string | undefined = block.params.regex
 				const filePattern: string | undefined = block.params.file_pattern
-				const sharedMessageProps: ClineSayTool = {
+				const sharedMessageProps: JamilaSayTool = {
 					tool: "searchFiles",
 					path: getReadablePath(this.cwd, this.removeClosingTag(block, "path", relDirPath)),
 					regex: this.removeClosingTag(block, "regex", regex),
@@ -1022,7 +1022,7 @@ export class ToolExecutor {
 							...sharedMessageProps,
 							content: "",
 							operationIsLocatedInWorkspace: isLocatedInWorkspace(block.params.path),
-						} satisfies ClineSayTool)
+						} satisfies JamilaSayTool)
 						if (this.shouldAutoApproveToolWithPath(block.name, block.params.path)) {
 							this.removeLastPartialMessageIfExistsWithType("ask", "tool")
 							await this.say("tool", partialMessage, undefined, undefined, block.partial)
@@ -1052,14 +1052,14 @@ export class ToolExecutor {
 							absolutePath,
 							regex,
 							filePattern,
-							this.clineIgnoreController,
+							this.jamIgnoreController,
 						)
 
 						const completeMessage = JSON.stringify({
 							...sharedMessageProps,
 							content: results,
 							operationIsLocatedInWorkspace: isLocatedInWorkspace(block.params.path),
-						} satisfies ClineSayTool)
+						} satisfies JamilaSayTool)
 						if (this.shouldAutoApproveToolWithPath(block.name, block.params.path)) {
 							this.removeLastPartialMessageIfExistsWithType("ask", "tool")
 							await this.say("tool", completeMessage, undefined, undefined, false)
@@ -1067,7 +1067,7 @@ export class ToolExecutor {
 							telemetryService.captureToolUsage(this.taskId, block.name, this.api.getModel().id, true, true)
 						} else {
 							showNotificationForApprovalIfAutoApprovalEnabled(
-								`Cline wants to search files in ${path.basename(absolutePath)}/`,
+								`Jamila wants to search files in ${path.basename(absolutePath)}/`,
 								this.autoApprovalSettings.enabled,
 								this.autoApprovalSettings.enableNotifications,
 							)
@@ -1134,7 +1134,7 @@ export class ToolExecutor {
 									action: action as BrowserAction,
 									coordinate: this.removeClosingTag(block, "coordinate", coordinate),
 									text: this.removeClosingTag(block, "text", text),
-								} satisfies ClineSayBrowserAction),
+								} satisfies JamilaSayBrowserAction),
 								undefined,
 								undefined,
 								block.partial,
@@ -1159,7 +1159,7 @@ export class ToolExecutor {
 								this.taskState.consecutiveAutoApprovedRequestsCount++
 							} else {
 								showNotificationForApprovalIfAutoApprovalEnabled(
-									`Cline wants to use a browser and launch ${url}`,
+									`Jamila wants to use a browser and launch ${url}`,
 									this.autoApprovalSettings.enabled,
 									this.autoApprovalSettings.enableNotifications,
 								)
@@ -1213,7 +1213,7 @@ export class ToolExecutor {
 									action: action as BrowserAction,
 									coordinate,
 									text,
-								} satisfies ClineSayBrowserAction),
+								} satisfies JamilaSayBrowserAction),
 								undefined,
 								undefined,
 								false,
@@ -1320,11 +1320,11 @@ export class ToolExecutor {
 							command = fixModelHtmlEscaping(command)
 						}
 
-						const ignoredFileAttemptedToAccess = this.clineIgnoreController.validateCommand(command)
+						const ignoredFileAttemptedToAccess = this.jamIgnoreController.validateCommand(command)
 						if (ignoredFileAttemptedToAccess) {
-							await this.say("clineignore_error", ignoredFileAttemptedToAccess)
+							await this.say("jamignore_error", ignoredFileAttemptedToAccess)
 							this.pushToolResult(
-								formatResponse.toolError(formatResponse.clineIgnoreError(ignoredFileAttemptedToAccess)),
+								formatResponse.toolError(formatResponse.jamIgnoreError(ignoredFileAttemptedToAccess)),
 								block,
 							)
 							await this.saveCheckpoint()
@@ -1350,7 +1350,7 @@ export class ToolExecutor {
 							didAutoApprove = true
 						} else {
 							showNotificationForApprovalIfAutoApprovalEnabled(
-								`Cline wants to execute a command: ${command}`,
+								`Jamila wants to execute a command: ${command}`,
 								this.autoApprovalSettings.enabled,
 								this.autoApprovalSettings.enableNotifications,
 							)
@@ -1412,7 +1412,7 @@ export class ToolExecutor {
 							serverName: this.removeClosingTag(block, "server_name", server_name),
 							toolName: this.removeClosingTag(block, "tool_name", tool_name),
 							arguments: this.removeClosingTag(block, "arguments", mcp_arguments),
-						} satisfies ClineAskUseMcpServer)
+						} satisfies JamilaAskUseMcpServer)
 
 						if (this.shouldAutoApproveTool(block.name)) {
 							this.removeLastPartialMessageIfExistsWithType("ask", "use_mcp_server")
@@ -1450,7 +1450,7 @@ export class ToolExecutor {
 								this.taskState.consecutiveMistakeCount++
 								await this.say(
 									"error",
-									`Cline tried to use ${tool_name} with an invalid JSON argument. Retrying...`,
+									`Jamila tried to use ${tool_name} with an invalid JSON argument. Retrying...`,
 								)
 								this.pushToolResult(
 									formatResponse.toolError(formatResponse.invalidMcpToolArgumentError(server_name, tool_name)),
@@ -1466,7 +1466,7 @@ export class ToolExecutor {
 							serverName: server_name,
 							toolName: tool_name,
 							arguments: mcp_arguments,
-						} satisfies ClineAskUseMcpServer)
+						} satisfies JamilaAskUseMcpServer)
 
 						const isToolAutoApproved = this.mcpHub.connections
 							?.find((conn) => conn.server.name === server_name)
@@ -1478,7 +1478,7 @@ export class ToolExecutor {
 							this.taskState.consecutiveAutoApprovedRequestsCount++
 						} else {
 							showNotificationForApprovalIfAutoApprovalEnabled(
-								`Cline wants to use ${tool_name} on ${server_name}`,
+								`Jamila wants to use ${tool_name} on ${server_name}`,
 								this.autoApprovalSettings.enabled,
 								this.autoApprovalSettings.enableNotifications,
 							)
@@ -1563,7 +1563,7 @@ export class ToolExecutor {
 							type: "access_mcp_resource",
 							serverName: this.removeClosingTag(block, "server_name", server_name),
 							uri: this.removeClosingTag(block, "uri", uri),
-						} satisfies ClineAskUseMcpServer)
+						} satisfies JamilaAskUseMcpServer)
 
 						if (this.shouldAutoApproveTool(block.name)) {
 							this.removeLastPartialMessageIfExistsWithType("ask", "use_mcp_server")
@@ -1595,7 +1595,7 @@ export class ToolExecutor {
 							type: "access_mcp_resource",
 							serverName: server_name,
 							uri,
-						} satisfies ClineAskUseMcpServer)
+						} satisfies JamilaAskUseMcpServer)
 
 						if (this.shouldAutoApproveTool(block.name)) {
 							this.removeLastPartialMessageIfExistsWithType("ask", "use_mcp_server")
@@ -1603,7 +1603,7 @@ export class ToolExecutor {
 							this.taskState.consecutiveAutoApprovedRequestsCount++
 						} else {
 							showNotificationForApprovalIfAutoApprovalEnabled(
-								`Cline wants to access ${uri} on ${server_name}`,
+								`Jamila wants to access ${uri} on ${server_name}`,
 								this.autoApprovalSettings.enabled,
 								this.autoApprovalSettings.enableNotifications,
 							)
@@ -1645,7 +1645,7 @@ export class ToolExecutor {
 				const sharedMessage = {
 					question: this.removeClosingTag(block, "question", question),
 					options: parsePartialArrayString(this.removeClosingTag(block, "options", optionsRaw)),
-				} satisfies ClineAskQuestion
+				} satisfies JamilaAskQuestion
 				try {
 					if (block.partial) {
 						await this.ask("followup", JSON.stringify(sharedMessage), block.partial).catch(() => {})
@@ -1664,7 +1664,7 @@ export class ToolExecutor {
 
 						if (this.autoApprovalSettings.enabled && this.autoApprovalSettings.enableNotifications) {
 							showSystemNotification({
-								subtitle: "Cline has a question...",
+								subtitle: "Jamila has a question...",
 								message: question.replace(/\n/g, " "),
 							})
 						}
@@ -1683,15 +1683,15 @@ export class ToolExecutor {
 							// Valid option selected, don't show user message in UI
 							// Update last followup message with selected option
 							const lastFollowupMessage = findLast(
-								this.messageStateHandler.getClineMessages(),
+								this.messageStateHandler.getJamilaMessages(),
 								(m) => m.ask === "followup",
 							)
 							if (lastFollowupMessage) {
 								lastFollowupMessage.text = JSON.stringify({
 									...sharedMessage,
 									selected: text,
-								} satisfies ClineAskQuestion)
-								await this.messageStateHandler.saveClineMessagesAndUpdateHistory()
+								} satisfies JamilaAskQuestion)
+								await this.messageStateHandler.saveJamilaMessagesAndUpdateHistory()
 							}
 						} else {
 							// Option not selected, send user feedback
@@ -1736,8 +1736,8 @@ export class ToolExecutor {
 
 						if (this.autoApprovalSettings.enabled && this.autoApprovalSettings.enableNotifications) {
 							showSystemNotification({
-								subtitle: "Cline wants to start a new task...",
-								message: `Cline is suggesting to start a new task with: ${context}`,
+								subtitle: "Jamila wants to start a new task...",
+								message: `Jamila is suggesting to start a new task with: ${context}`,
 							})
 						}
 
@@ -1794,8 +1794,8 @@ export class ToolExecutor {
 
 						if (this.autoApprovalSettings.enabled && this.autoApprovalSettings.enableNotifications) {
 							showSystemNotification({
-								subtitle: "Cline wants to condense the conversation...",
-								message: `Cline is suggesting to condense your conversation with: ${context}`,
+								subtitle: "Jamila wants to condense the conversation...",
+								message: `Jamila is suggesting to condense your conversation with: ${context}`,
 							})
 						}
 
@@ -1831,7 +1831,7 @@ export class ToolExecutor {
 								this.taskState.conversationHistoryDeletedRange,
 								keepStrategy,
 							)
-							await this.messageStateHandler.saveClineMessagesAndUpdateHistory()
+							await this.messageStateHandler.saveJamilaMessagesAndUpdateHistory()
 							await this.contextManager.triggerApplyStandardContextTruncationNoticeChange(
 								Date.now(),
 								await ensureTaskDirectoryExists(this.context, this.taskId),
@@ -1912,14 +1912,14 @@ export class ToolExecutor {
 
 						if (this.autoApprovalSettings.enabled && this.autoApprovalSettings.enableNotifications) {
 							showSystemNotification({
-								subtitle: "Cline wants to create a github issue...",
-								message: `Cline is suggesting to create a github issue with the title: ${title}`,
+								subtitle: "Jamila wants to create a github issue...",
+								message: `Jamila is suggesting to create a github issue with the title: ${title}`,
 							})
 						}
 
 						// Derive system information values algorithmically
 						const operatingSystem = os.platform() + " " + os.release()
-						const clineVersion =
+						const jamVersion =
 							vscode.extensions.getExtension("saoudrizwan.claude-dev")?.packageJSON.version || "Unknown"
 						const systemInfo = `VSCode: ${vscode.version}, Node.js: ${process.version}, Architecture: ${os.arch()}`
 						const providerAndModel = `${(await getWorkspaceState(this.context, "apiProvider")) as string} / ${this.api.getModel().id}`
@@ -1935,7 +1935,7 @@ export class ToolExecutor {
 							provider_and_model: providerAndModel,
 							operating_system: operatingSystem,
 							system_info: systemInfo,
-							cline_version: clineVersion,
+							jam_version: jamVersion,
 						})
 
 						const { text, images, files: reportBugFiles } = await this.ask("report_bug", bugReportData, false)
@@ -1968,7 +1968,7 @@ export class ToolExecutor {
 								const params = new Map<string, string>()
 								params.set("title", title)
 								params.set("operating-system", operatingSystem)
-								params.set("cline-version", clineVersion)
+								params.set("jam-version", jamVersion)
 								params.set("system-info", systemInfo)
 								params.set("additional-context", additional_context)
 								params.set("what-happened", what_happened)
@@ -1978,7 +1978,7 @@ export class ToolExecutor {
 
 								// Use our utility function to create and open the GitHub issue URL
 								// This bypasses VS Code's URI handling issues with special characters
-								await createAndOpenGitHubIssue("cline", "cline", "bug_report.yml", params)
+								await createAndOpenGitHubIssue("jam", "jam", "bug_report.yml", params)
 							} catch (error) {
 								console.error(`An error occurred while attempting to report the bug: ${error}`)
 							}
@@ -1995,7 +1995,7 @@ export class ToolExecutor {
 			case "web_fetch": {
 				const url: string | undefined = block.params.url
 				// TODO: Implement caching for web_fetch
-				const sharedMessageProps: ClineSayTool = {
+				const sharedMessageProps: JamilaSayTool = {
 					tool: "webFetch",
 					path: this.removeClosingTag(block, "url", url),
 					content: `Fetching URL: ${this.removeClosingTag(block, "url", url)}`,
@@ -2006,7 +2006,7 @@ export class ToolExecutor {
 						const partialMessage = JSON.stringify({
 							...sharedMessageProps,
 							operationIsLocatedInWorkspace: false, // web_fetch is always external
-						} satisfies ClineSayTool)
+						} satisfies JamilaSayTool)
 
 						// WebFetch is a read-only operation, generally safe.
 						// Let's assume it follows similar auto-approval logic to read_file for now.
@@ -2031,7 +2031,7 @@ export class ToolExecutor {
 						const completeMessage = JSON.stringify({
 							...sharedMessageProps,
 							operationIsLocatedInWorkspace: false,
-						} satisfies ClineSayTool)
+						} satisfies JamilaSayTool)
 
 						if (this.shouldAutoApproveTool("web_fetch" as ToolUseName)) {
 							this.removeLastPartialMessageIfExistsWithType("ask", "tool")
@@ -2046,7 +2046,7 @@ export class ToolExecutor {
 							)
 						} else {
 							showNotificationForApprovalIfAutoApprovalEnabled(
-								`Cline wants to fetch content from ${url}`,
+								`Jamila wants to fetch content from ${url}`,
 								this.autoApprovalSettings.enabled,
 								this.autoApprovalSettings.enableNotifications,
 							)
@@ -2100,7 +2100,7 @@ export class ToolExecutor {
 				const sharedMessage = {
 					response: this.removeClosingTag(block, "response", response),
 					options: parsePartialArrayString(this.removeClosingTag(block, "options", optionsRaw)),
-				} satisfies ClinePlanModeResponse
+				} satisfies JamilaPlanModeResponse
 				try {
 					if (block.partial) {
 						await this.ask("plan_mode_respond", JSON.stringify(sharedMessage), block.partial).catch(() => {})
@@ -2116,7 +2116,7 @@ export class ToolExecutor {
 
 						// if (this.autoApprovalSettings.enabled && this.autoApprovalSettings.enableNotifications) {
 						// 	showSystemNotification({
-						// 		subtitle: "Cline has a response...",
+						// 		subtitle: "Jamila has a response...",
 						// 		message: response.replace(/\n/g, " "),
 						// 	})
 						// }
@@ -2142,15 +2142,15 @@ export class ToolExecutor {
 							// Valid option selected, don't show user message in UI
 							// Update last followup message with selected option
 							const lastPlanMessage = findLast(
-								this.messageStateHandler.getClineMessages(),
+								this.messageStateHandler.getJamilaMessages(),
 								(m) => m.ask === "plan_mode_respond",
 							)
 							if (lastPlanMessage) {
 								lastPlanMessage.text = JSON.stringify({
 									...sharedMessage,
 									selected: text,
-								} satisfies ClinePlanModeResponse)
-								await this.messageStateHandler.saveClineMessagesAndUpdateHistory()
+								} satisfies JamilaPlanModeResponse)
+								await this.messageStateHandler.saveJamilaMessagesAndUpdateHistory()
 							}
 						} else {
 							// Option not selected, send user feedback
@@ -2219,31 +2219,31 @@ export class ToolExecutor {
 
 					const hasNewChanges = await this.doesLatestTaskCompletionHaveNewChanges()
 
-					const clineMessages = this.messageStateHandler.getClineMessages()
+					const jamMessages = this.messageStateHandler.getJamilaMessages()
 
-					const lastCompletionResultMessageIndex = findLastIndex(clineMessages, (m) => m.say === "completion_result")
+					const lastCompletionResultMessageIndex = findLastIndex(jamMessages, (m) => m.say === "completion_result")
 					const lastCompletionResultMessage =
-						lastCompletionResultMessageIndex !== -1 ? clineMessages[lastCompletionResultMessageIndex] : undefined
+						lastCompletionResultMessageIndex !== -1 ? jamMessages[lastCompletionResultMessageIndex] : undefined
 					if (
 						lastCompletionResultMessage &&
 						lastCompletionResultMessageIndex !== -1 &&
 						hasNewChanges &&
 						!lastCompletionResultMessage.text?.endsWith(COMPLETION_RESULT_CHANGES_FLAG)
 					) {
-						await this.messageStateHandler.updateClineMessage(lastCompletionResultMessageIndex, {
+						await this.messageStateHandler.updateJamilaMessage(lastCompletionResultMessageIndex, {
 							text: lastCompletionResultMessage.text + COMPLETION_RESULT_CHANGES_FLAG,
 						})
 					}
 				}
 
 				try {
-					const lastMessage = this.messageStateHandler.getClineMessages().at(-1)
+					const lastMessage = this.messageStateHandler.getJamilaMessages().at(-1)
 					if (block.partial) {
 						if (command) {
 							// the attempt_completion text is done, now we're getting command
 							// remove the previous partial attempt_completion ask, replace with say, post state to webview, then stream command
 
-							// const secondLastMessage = this.clineMessages.at(-2)
+							// const secondLastMessage = this.jamMessages.at(-2)
 							// NOTE: we do not want to auto approve a command run as part of the attempt_completion tool
 							if (lastMessage && lastMessage.ask === "command") {
 								// update command

@@ -93,7 +93,7 @@ export const TerminalSettingsSection: React.FC = () => {
 					))}
 				</VSCodeDropdown>
 				<p style={{ fontSize: "12px", color: "var(--vscode-descriptionForeground)", margin: "5px 0 0 0" }}>
-					Select the default terminal Cline will use. 'Default' uses your VSCode global setting.
+					Select the default terminal Jamila will use. 'Default' uses your VSCode global setting.
 				</p>
 			</div>
 
@@ -116,7 +116,7 @@ export const TerminalSettingsSection: React.FC = () => {
 					)}
 				</div>
 				<p style={{ fontSize: "12px", color: "var(--vscode-descriptionForeground)", margin: 0 }}>
-					Set how long Cline waits for shell integration to activate before executing commands. Increase this value if
+					Set how long Jamila waits for shell integration to activate before executing commands. Increase this value if
 					you experience terminal connection timeouts.
 				</p>
 			</div>
@@ -130,7 +130,7 @@ export const TerminalSettingsSection: React.FC = () => {
 					</VSCodeCheckbox>
 				</div>
 				<p style={{ fontSize: "12px", color: "var(--vscode-descriptionForeground)", margin: 0 }}>
-					When enabled, Cline will reuse existing terminal windows that aren't in the current working directory. Disable
+					When enabled, Jamila will reuse existing terminal windows that aren't in the current working directory. Disable
 					this if you experience issues with task lockout after a terminal command.
 				</p>
 			</div>

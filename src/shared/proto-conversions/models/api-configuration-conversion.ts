@@ -220,8 +220,8 @@ function convertApiProviderToProto(provider: string | undefined): ProtoApiProvid
 			return ProtoApiProvider.MISTRAL
 		case "vscode-lm":
 			return ProtoApiProvider.VSCODE_LM
-		case "cline":
-			return ProtoApiProvider.CLINE
+		case "jam":
+			return ProtoApiProvider.JAM
 		case "litellm":
 			return ProtoApiProvider.LITELLM
 		case "nebius":
@@ -282,8 +282,8 @@ function convertProtoToApiProvider(provider: ProtoApiProvider): ApiProvider {
 			return "mistral"
 		case ProtoApiProvider.VSCODE_LM:
 			return "vscode-lm"
-		case ProtoApiProvider.CLINE:
-			return "cline"
+		case ProtoApiProvider.JAM:
+			return "jam"
 		case ProtoApiProvider.LITELLM:
 			return "litellm"
 		case ProtoApiProvider.NEBIUS:
@@ -312,7 +312,7 @@ export function convertApiConfigurationToProto(config: ApiConfiguration): ProtoA
 	return {
 		apiModelId: config.apiModelId,
 		apiKey: config.apiKey,
-		clineApiKey: config.clineApiKey,
+		jamApiKey: config.jamApiKey,
 		taskId: config.taskId,
 		liteLlmBaseUrl: config.liteLlmBaseUrl,
 		liteLlmModelId: config.liteLlmModelId,
@@ -393,7 +393,7 @@ export function convertProtoToApiConfiguration(protoConfig: ProtoApiConfiguratio
 	return {
 		apiModelId: protoConfig.apiModelId,
 		apiKey: protoConfig.apiKey,
-		clineApiKey: protoConfig.clineApiKey,
+		jamApiKey: protoConfig.jamApiKey,
 		taskId: protoConfig.taskId,
 		liteLlmBaseUrl: protoConfig.liteLlmBaseUrl,
 		liteLlmModelId: protoConfig.liteLlmModelId,

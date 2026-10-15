@@ -2,9 +2,9 @@
 
 ## [3.18.0]
 
--   Optimized Cline to work with the Claude 4 family of models, resulting in improved performance, reliability, and new capabilities
+-   Optimized Jamila to work with the Claude 4 family of models, resulting in improved performance, reliability, and new capabilities
 -   Added a new Gemini CLI provider that allows you to use your local Gemini CLI authentication to access Gemini models for free (Thanks @google-gemini!)
--   Optimized Cline to work with the Gemini 2.5 family of models
+-   Optimized Jamila to work with the Gemini 2.5 family of models
 -   Updated the default and recommended model to Claude 4 Sonnet for the best performance
 -   Fix race condition in Plan/Act mode switching
 -   Improve robustness of search and replace parsing
@@ -29,7 +29,7 @@
 
 -   Add Claude Code as a new API provider, allowing integration with Anthropic's Claude Code CLI tool and Claude Max Plan (Thanks @BarreiroT!)
 -   Add SAP AI Core as a new API provider with support for Claude and GPT models (Thanks @schardosin!)
--   Add configurable default terminal profile setting, allowing users to specify which terminal Cline should use (Thanks @valinha!)
+-   Add configurable default terminal profile setting, allowing users to specify which terminal Jamila should use (Thanks @valinha!)
 -   Add terminal output size constraint setting to limit how much terminal output is processed
 -   Add MCP Rich Display settings to the settings page for persistent configuration (Thanks @Vl4diC0de!)
 -   Improve copy button functionality with refactored reusable components (Thanks @shouhanzen!)
@@ -40,12 +40,12 @@
 -   Fix checkpoint saving to properly track all file changes
 -   Improve file context warnings to reduce diff edit errors when resuming restored tasks
 -   Clear chat input when switching between Plan/Act modes within a task
--   Exclude .clinerules files from checkpoint tracking
+-   Exclude .jamrules files from checkpoint tracking
 
 ## [3.17.13]
 
 -   Add Thinking UX for Gemini models, providing visual feedback during model reasoning
--   Add support for Notifications MCP integration with Cline
+-   Add support for Notifications MCP integration with Jamila
 -   Add prompt caching indicator for Grok 3 models
 -   Sort MCP marketplace by newest listings by default for easier discovery of recent servers
 -   Update O3 model family pricing to reflect latest OpenAI rates
@@ -56,7 +56,7 @@
 
 ## [3.17.12]
 
--   **Free Grok Model Available!** Access Grok 3 completely free through the Cline provider
+-   **Free Grok Model Available!** Access Grok 3 completely free through the Jamila provider
 -   Add collapsible MCP response panels to keep conversations focused on the main AI responses while still allowing access to detailed MCP output (Thanks @valinha!)
 -   Prioritize active files (open tabs) at the top of the file context menu when using @ mentions (Thanks @abeatrix!)
 -   Fix context menu to properly default to "File" option instead of incorrectly selecting "Git Commits"
@@ -71,7 +71,7 @@
 
 -   Add support for Qwen 3 series models with thinking mode options (Thanks @Jonny-china!)
 -   Add new AskSage models: Claude 4 Sonnet, Claude 4 Opus, GPT 4.1, Gemini 2.5 Pro (Thanks @swhite24!)
--   Add VSCode walkthrough to help new users get started with Cline
+-   Add VSCode walkthrough to help new users get started with Jamila
 -   Add support for streamable MCP servers
 -   Improve Ollama model selection with filterable dropdown instead of radio buttons (Thanks @paulgear!)
 -   Add setting to disable aggressive terminal reuse to help users experiencing task lockout issues
@@ -79,7 +79,7 @@
 
 ## [3.17.9]
 
--   Aligning Cline to work with Claude 4 model family (Experimental)
+-   Aligning Jamila to work with Claude 4 model family (Experimental)
 -   Add task timeline scrolling feature
 -   Add support for uploading CSV and XLSX files for data analysis and processing
 -   Add stable Grok-3 models to xAI provider (grok-3, grok-3-fast, grok-3-mini, grok-3-mini-fast) and update default model from grok-3-beta to grok-3 (Thanks @PeterDaveHello!)
@@ -134,7 +134,7 @@
 
 ## [3.17.1]
 
--   Add prompt caching for Claude 4 models on Cline and OpenRouter providers
+-   Add prompt caching for Claude 4 models on Jamila and OpenRouter providers
 -   Increase max tokens for Claude Opus 4 from 4096 to 8192
 
 ## [3.17.0]
@@ -157,9 +157,9 @@
 ## [3.16.2]
 
 -   Add support for Gemini 2.5 Flash Preview 05-20 model to Vertex AI provider with massive 1M token context window (Thanks @omercelik!)
--   Add keyboard shortcut (Cmd+') to quickly focus Cline from anywhere in VS Code
--   Add lightbulb actions for selected text with options to "Add to Cline", "Explain with Cline", and "Improve with Cline"
--   Automatically focus Cline window after extension updates
+-   Add keyboard shortcut (Cmd+') to quickly focus Jamila from anywhere in VS Code
+-   Add lightbulb actions for selected text with options to "Add to Jamila", "Explain with Jamila", and "Improve with Jamila"
+-   Automatically focus Jamila window after extension updates
 
 ## [3.16.1]
 
@@ -203,7 +203,7 @@
 -   Added details to auto approve menu and more sensible default controls
 -   Add detailed configuration options for LiteLLM provider
 -   Add webview telemetry for users who have opted in to telemetry
--   Update Gemini in OpenRouter/Cline providers to use implicit caching
+-   Update Gemini in OpenRouter/Jamila providers to use implicit caching
 -   Fix freezing issues during rendering of large streaming text
 -   Fix grey screen webview crashes by releasing memory after every diff edit
 -   Fix breaking out of diff auto-scroll
@@ -223,9 +223,9 @@
 -   Add ability to favorite a task, allowing it to be kept when clearing all tasks
 -   Add npm script for issue creation (Thanks DaveFres!)
 -   Add confirmation dialog to Delete All History button
--   Add ability to allow the user to type their next message into the chat while Cline is taking action
--   Add ability to generate commit message via cline (Thanks zapp88!)
--   Add improvements to caching for gemini models on OpenRouter and Cline providers
+-   Add ability to allow the user to type their next message into the chat while Jamila is taking action
+-   Add ability to generate commit message via jam (Thanks zapp88!)
+-   Add improvements to caching for gemini models on OpenRouter and Jamila providers
 -   Add improvements to allow scrolling the file being edited.
 -   Add ui for windsurf and cursor rules
 -   Add mistral medium-3 model
@@ -237,7 +237,7 @@
 -   Update fetch cache details from generation endpoint
 -   Update converted docs to Mintlify
 -   Update the isOminiModel to include o4-mini model (Thanks PeterDaveHello!)
--   Update file size that can be read by Cline, allowing larger files
+-   Update file size that can be read by Jamila, allowing larger files
 -   Update defaults for bedrock API models (Thanks Watany!)
 -   Update to extend ReasoningEffort to non-o3-mini reasoning models for all providers (Thanks PeterDaveHello!)
 -   Update to give error when a user tries to upload an image larger than 7500x7500 pixels
@@ -258,19 +258,19 @@
 -   Add support for custom model ID in AWS Bedrock provider, enabling use of Application Inference Profile (Thanks @clicube!)
 -   Add more robust caching & cache tracking for gemini & vertex providers
 -   Add support for LaTeX rendering
--   Add support for custom API request timeout. Timeouts were 15-30s, but can now be configured via settings for OpenRouter/Cline & Ollama (Thanks @WingsDrafterwork!)
+-   Add support for custom API request timeout. Timeouts were 15-30s, but can now be configured via settings for OpenRouter/Jamila & Ollama (Thanks @WingsDrafterwork!)
 -   Add truncation notice when truncating manually
 -   Add a timeout setting for the terminal connection, allowing users to set a time to wait for terminal startup
 -   Add copy button to code blocks
 -   Add copy button to markdown blocks (Thanks @weshoke!)
 -   Add checkpoints to more messages
 -   Add slash command to create a new rules file (/newrule)
--   Add cache ui for open router and cline provider
+-   Add cache ui for open router and jam provider
 -   Add Amazon Nova Premier model to Bedrock (Thanks @watany!)
 -   Add support for cursorrules and windsurfrules
 -   Add support for batch history deletion (Thanks @danix800!)
 -   Improve Drag & Drop experience
--   Create clinerules folder when creating new rule if it's needed
+-   Create jamrules folder when creating new rule if it's needed
 -   Enable pricing calculation for gemini and vertex providers
 -   Refactor message handling to not show the MCP View of the server modal
 -   Migrate the addRemoteServer to protobus (Thanks @DaveFres!)
@@ -286,7 +286,7 @@
 
 -   Add download counts to MCP marketplace items
 -   Add `/compact` command
--   Add prompt caching to gemini models in cline / openrouter providers
+-   Add prompt caching to gemini models in jam / openrouter providers
 -   Add tooltips to bottom row menu
 
 ## [3.13.2]
@@ -294,7 +294,7 @@
 -   Add Gemini 2.5 Flash model to Vertex and Gemini Providers (Thanks monotykamary!)
 -   Add Caching to gemini provider (Thanks arafatkatze!)
 -   Add thinking budget support to Gemini Models (Thanks monotykamary!)
--   Add !include .file directive support for .clineignore (Thanks watany-dev!)
+-   Add !include .file directive support for .jamignore (Thanks watany-dev!)
 -   Improve slash command functionality
 -   Improve prompting for new task tool
 -   Fix o1 temperature being passed to the azure api (Thanks treeleaves30760!)
@@ -314,11 +314,11 @@
 
 ## [3.13.0]
 
--   Add Cline rules popover under the chat field, allowing you to easily add, enable & disable workspace level or global rule files
+-   Add Jamila rules popover under the chat field, allowing you to easily add, enable & disable workspace level or global rule files
 -   Add new slash command menu letting you type “/“ to do quick actions like creating new tasks
 -   Add ability to edit past messages, with options to restore your workspace back to that point
 -   Allow sending a message when selecting an option provided by the question or plan tool
--   Add command to jump to Cline's chat input
+-   Add command to jump to Jamila's chat input
 -   Add support for OpenAI o3 & 4o-mini (Thanks @PeterDaveHello and @arafatkatze!)
 -   Add baseURL option for Google Gemini provider (Thanks @owengo and @olivierhub!)
 -   Add support for Azure's DeepSeek model. (Thanks @yt3trees!)
@@ -332,7 +332,7 @@
 ## [3.12.3]
 
 -   Add copy button to MermaidBlock component (Thanks @cacosub7!)
--   Add the ability to fetch from global cline rules files
+-   Add the ability to fetch from global jam rules files
 -   Add icon to indicate when a file outside of the users workspace is edited
 
 ## [3.12.2]
@@ -347,10 +347,10 @@
 
 ## [3.12.0]
 
--   Add favorite toggles for models when using the Cline & OpenRouter providers
+-   Add favorite toggles for models when using the Jamila & OpenRouter providers
 -   Add auto-approve options for edits/reads outside of the workspace
 -   Improve diff editing animation for large files
--   Add indicator showing number of diff edits when Cline edits a file
+-   Add indicator showing number of diff edits when Jamila edits a file
 -   Add streaming support and reasoning effort option to xAI's Grok 3 Mini
 -   Add settings button to MCP popover to easily modify installed servers
 -   Fix bug where browser tool actions would show unparsed results in the chat view
@@ -362,13 +362,13 @@
 
 -   Redesign checkpoint UI to declutter chat view by using a subtle indicator line that expands to a popover on hover, with a new date indicator for when it was created
 -   Add support for xAI's provider's Grok 3 models
--   Add more robust error tracking for users opted in to telemetry (thank you for helping us make Cline better!)
+-   Add more robust error tracking for users opted in to telemetry (thank you for helping us make Jamila better!)
 
 ## [3.10.1]
 
--   Add CMD+' keyboard shortcut to add selected text to Cline
--   Cline now auto focuses the text field when using 'Add to Cline' shortcut
--   Add new 'Create New Task' tool to let Cline start a new task autonomously!
+-   Add CMD+' keyboard shortcut to add selected text to Jamila
+-   Jamila now auto focuses the text field when using 'Add to Jamila' shortcut
+-   Add new 'Create New Task' tool to let Jamila start a new task autonomously!
 -   Fix Mermaid diagram issues
 -   Fix Gemini provider cost calculation to take new tiered pricing structure into account
 
@@ -377,15 +377,15 @@
 -   Add setting to let browser tool use local Chrome via remote debugging, enabling session-based browsing. Replaces sessionless Chromium, unlocking debugging and productivity workflows tied to your real browser state.
 -   Add new auto-approve option to approve _ALL_ commands (use at your own risk!)
 -   Add modal in the chat area to more easily enable or disable MCP servers
--   Add drag and drop of file/folders into cline chat (Thanks eljapi!)
+-   Add drag and drop of file/folders into jam chat (Thanks eljapi!)
 -   Add prompt caching for LiteLLM + Claude (Thanks sammcj!)
 -   Add Improved context management
 -   Fix MCP auto approve toggle issues being out of sync with settings
 
 ## [3.9.2]
 
--   Add recommended models for Cline provider
--   Add ability to detect when user edits files manually so Cline knows to re-read, leading to reduced diff edit errors
+-   Add recommended models for Jamila provider
+-   Add ability to detect when user edits files manually so Jamila knows to re-read, leading to reduced diff edit errors
 -   Add improvements to file mention searching for faster searching
 -   Add scoring logic to file mentions to sort and exclude results based on relevance
 -   Add Support for Bytedance Doubao (Thanks Tunixer!)
@@ -407,7 +407,7 @@
 -   Add UI for adding remote servers
 -   Add Mentions Feature Guide and update related documentation
 -   Fix bug where menu would open in sidebar and open tab
--   Fix issue with Cline accounts not showing user info in popout tabs
+-   Fix issue with Jamila accounts not showing user info in popout tabs
 -   Fix bug where menu buttons wouldn't open view in sidebar
 
 ## [3.8.5]
@@ -426,7 +426,7 @@
 
 -   Add Sambanova Deepseek-V3-0324
 -   Add cost calculation support for LiteLLM provider
--   Fix bug where Cline would use plan_mode_response bug without response parameter
+-   Fix bug where Jamila would use plan_mode_response bug without response parameter
 
 ## [3.8.3]
 
@@ -445,15 +445,15 @@
 
 ## [3.8.0]
 
--   Add 'Add to Cline' as an option when you right-click in a file or the terminal, making it easier to add context to your current task
--   Add 'Fix with Cline' code action - when you see a lightbulb icon in your editor, you can now select 'Fix with Cline' to send the code and associated errors for Cline to fix. (Cursor users can also use the 'Quick Fix (CMD + .)' menu to see this option)
--   Add Account view to display billing and usage history for Cline account users. You can now keep track of credits used and transaction history right in the extension!
--   Add 'Sort underling provider routing' setting to Cline/OpenRouter allowing you to sort provider used by throughput, price, latency, or the default (combination of price and uptime)
+-   Add 'Add to Jamila' as an option when you right-click in a file or the terminal, making it easier to add context to your current task
+-   Add 'Fix with Jamila' code action - when you see a lightbulb icon in your editor, you can now select 'Fix with Jamila' to send the code and associated errors for Jamila to fix. (Cursor users can also use the 'Quick Fix (CMD + .)' menu to see this option)
+-   Add Account view to display billing and usage history for Jamila account users. You can now keep track of credits used and transaction history right in the extension!
+-   Add 'Sort underling provider routing' setting to Jamila/OpenRouter allowing you to sort provider used by throughput, price, latency, or the default (combination of price and uptime)
 -   Improve rich MCP display with dynamic image loading and support for GIFs
--   Add 'Documentation' menu item to easily access Cline's docs
+-   Add 'Documentation' menu item to easily access Jamila's docs
 -   Add OpenRouter's new usage_details feature for more reliable cost reporting
--   Display total space Cline takes on disk next to 'Delete all Tasks' button in History view
--   Fix 'Context Window Exceeded' error for OpenRouter/Cline Accounts (additional support coming soon)
+-   Display total space Jamila takes on disk next to 'Delete all Tasks' button in History view
+-   Fix 'Context Window Exceeded' error for OpenRouter/Jamila Accounts (additional support coming soon)
 -   Fix bug where OpenRouter model ID would be set to invalid value
 -   Add button to delete MCP servers in a failure state
 
@@ -464,9 +464,9 @@
 
 ## [3.7.0]
 
--   Cline now displays selectable options when asking questions or presenting a plan, saving you from having to type out responses!
--   Add support for a `.clinerules/` directory to load multiple files at once (thanks @ryo-ma!)
--   Prevent Cline from reading extremely large files into context that would overload context window
+-   Jamila now displays selectable options when asking questions or presenting a plan, saving you from having to type out responses!
+-   Add support for a `.jamrules/` directory to load multiple files at once (thanks @ryo-ma!)
+-   Prevent Jamila from reading extremely large files into context that would overload context window
 -   Improve checkpoints loading performance and display warning for large projects not suited for checkpoints
 -   Add SambaNova API provider (thanks @saad-noodleseed!)
 -   Add VPC endpoint option for AWS Bedrock profiles (thanks @minorunara!)
@@ -488,11 +488,11 @@
 
 ## [3.6.0]
 
--   Add Cline API as a provider option, allowing new users to sign up and get started with Cline for free
+-   Add Jamila API as a provider option, allowing new users to sign up and get started with Jamila for free
 -   Optimize checkpoints with branch-per-task strategy, reducing storage required and first task load times
 -   Fix problem with Plan/Act toggle keyboard shortcut not working in Windows (thanks @yt3trees!)
 -   Add new Gemini models to GCP Vertex (thanks @shohei-ihaya!) and Claude models AskSage (thanks @swhite24!)
--   Improve OpenRouter/Cline error reporting
+-   Improve OpenRouter/Jamila error reporting
 
 ## [3.5.1]
 
@@ -544,7 +544,7 @@
 
 ## [3.3.0]
 
--   Add .clineignore to block Cline from accessing specified file patterns
+-   Add .jamignore to block Jamila from accessing specified file patterns
 -   Add keyboard shortcut + tooltips for Plan/Act toggle
 -   Fix bug where new files won't show up in files dropdown
 -   Add automatic retry for rate limited requests (thanks @ViezeVingertjes!)
@@ -594,7 +594,7 @@
 
 ## [3.2.0]
 
--   Add Plan/Act mode toggle to let you plan tasks with Cline before letting him get to work
+-   Add Plan/Act mode toggle to let you plan tasks with Jamila before letting him get to work
 -   Easily switch between API providers and models using a new popup menu under the chat field
 -   Add VS Code LM API provider to run models provided by other VS Code extensions (e.g. GitHub Copilot). Shoutout to @julesmons, @RaySinner, and @MrUbens for putting this together!
 -   Add on/off toggle for MCP servers to disable them when not in use. Thanks @MrUbens!
@@ -610,7 +610,7 @@
 
 ## [3.1.7]
 
--   Add ability to change viewport size and headless mode when Cline asks to launch the browser
+-   Add ability to change viewport size and headless mode when Jamila asks to launch the browser
 
 ## [3.1.6]
 
@@ -619,7 +619,7 @@
 
 ## [3.1.5]
 
--   Fix bug where Cline couldn't read "@/" import path aliases from tool results
+-   Fix bug where Jamila couldn't read "@/" import path aliases from tool results
 
 ## [3.1.4]
 
@@ -631,7 +631,7 @@
 
 ## [3.1.0]
 
--   Added checkpoints: Snapshots of workspace are automatically created whenever Cline uses a tool
+-   Added checkpoints: Snapshots of workspace are automatically created whenever Jamila uses a tool
 -   Compare changes: Hover over any tool use to see a diff between the snapshot and current workspace state
 -   Restore options: Choose to restore just the task state, just the workspace files, or both
 -   New 'See new changes' button appears after task completion, providing an overview of all workspace changes
@@ -683,16 +683,16 @@
 
 ## [3.0.0]
 
--   Cline now uses a search & replace diff based approach when editing large files to prevent code deletion issues.
+-   Jamila now uses a search & replace diff based approach when editing large files to prevent code deletion issues.
 -   Adds support for a more comprehensive auto-approve configuration, allowing you to specify which tools require approval and which don't.
--   Adds ability to enable system notifications for when Cline needs approval or completes a task.
--   Adds support for a root-level `.clinerules` file that can be used to specify custom instructions for the project.
+-   Adds ability to enable system notifications for when Jamila needs approval or completes a task.
+-   Adds support for a root-level `.jamrules` file that can be used to specify custom instructions for the project.
 
 ## [2.2.0]
 
--   Add support for Model Context Protocol (MCP), enabling Cline to use custom tools like web-search tool or GitHub tool
+-   Add support for Model Context Protocol (MCP), enabling Jamila to use custom tools like web-search tool or GitHub tool
 -   Add MCP server management tab accessible via the server icon in the menu bar
--   Add ability for Cline to dynamically create new MCP servers based on user requests (e.g., "add a tool that gets the latest npm docs")
+-   Add ability for Jamila to dynamically create new MCP servers based on user requests (e.g., "add a tool that gets the latest npm docs")
 
 ## [2.1.6]
 
@@ -717,11 +717,11 @@
 
 ## [2.1.1]
 
--   Add stricter prompt to prevent Cline from editing files during a browser session without first closing the browser
+-   Add stricter prompt to prevent Jamila from editing files during a browser session without first closing the browser
 
 ## [2.1.0]
 
--   Cline now uses Anthropic's new "Computer Use" feature to launch a browser, click, type, and scroll. This gives him more autonomy in runtime debugging, end-to-end testing, and even general web use. Try asking "Look up the weather in Colorado" to see it in action! (Available with Claude 3.5 Sonnet v2)
+-   Jamila now uses Anthropic's new "Computer Use" feature to launch a browser, click, type, and scroll. This gives him more autonomy in runtime debugging, end-to-end testing, and even general web use. Try asking "Look up the weather in Colorado" to see it in action! (Available with Claude 3.5 Sonnet v2)
 
 ## [2.0.19]
 
@@ -741,7 +741,7 @@
 
 ## [2.0.15]
 
--   Fix bug where modifying Cline's edits would lead him to try to re-apply the edits
+-   Fix bug where modifying Jamila's edits would lead him to try to re-apply the edits
 -   Fix bug where weaker models would display file contents before using the write_to_file tool
 -   Fix o1-mini and o1-preview errors when using OpenAI native
 
@@ -767,7 +767,7 @@
 
 ## [2.0.9]
 
--   Update system prompt to try to prevent Cline from lazy coding (`// rest of code here...`)
+-   Update system prompt to try to prevent Jamila from lazy coding (`// rest of code here...`)
 
 ## [2.0.8]
 
@@ -780,19 +780,19 @@
 
 ## [2.0.6]
 
--   Update URLs to https://github.com/cline/cline
+-   Update URLs to https://github.com/jam/jam
 
 ## [2.0.5]
 
--   Fixed bug where Cline's edits would stream into the active tab when switching tabs during a write_to_file
+-   Fixed bug where Jamila's edits would stream into the active tab when switching tabs during a write_to_file
 -   Added explanation in task continuation prompt that an interrupted write_to_file reverts the file to its original contents, preventing unnecessary re-reads
 -   Fixed non-first chunk error handling in case stream fails mid-way through
 
 ## [2.0.0]
 
--   New name! Meet Cline, an AI assistant that can use your CLI and Editor
--   Responses are now streamed with a yellow text decoration animation to keep track of Cline's progress as he edits files
--   New Cancel button to give Cline feedback if he goes off in the wrong direction, giving you more control over tasks
+-   New name! Meet Jamila, an AI assistant that can use your CLI and Editor
+-   Responses are now streamed with a yellow text decoration animation to keep track of Jamila's progress as he edits files
+-   New Cancel button to give Jamila feedback if he goes off in the wrong direction, giving you more control over tasks
 -   Re-imagined tool calling prompt resulting in ~40% fewer requests to accomplish tasks + better performance with other models
 -   Search and use any model with OpenRouter
 

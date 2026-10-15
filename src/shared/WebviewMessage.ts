@@ -57,7 +57,7 @@ export interface WebviewMessage {
 	grpc_request_cancel?: {
 		request_id: string // ID of the request to cancel
 	}
-	// For cline rules and workflows
+	// For jam rules and workflows
 	isGlobal?: boolean
 	rulePath?: string
 	workflowPath?: string
@@ -70,8 +70,8 @@ export interface WebviewMessage {
 	defaultTerminalProfile?: string
 }
 
-export type ClineAskResponse = "yesButtonClicked" | "noButtonClicked" | "messageResponse"
+export type JamilaAskResponse = "yesButtonClicked" | "noButtonClicked" | "messageResponse"
 
-export type ClineCheckpointRestore = "task" | "workspace" | "taskAndWorkspace"
+export type JamilaCheckpointRestore = "task" | "workspace" | "taskAndWorkspace"
 
 export type TaskFeedbackType = "thumbs_up" | "thumbs_down"

@@ -1,7 +1,7 @@
 import { combineApiRequests } from "@/shared/combineApiRequests"
-import { ensureTaskDirectoryExists, saveApiConversationHistory, saveClineMessages } from "../storage/disk"
+import { ensureTaskDirectoryExists, saveApiConversationHistory, saveJamilaMessages } from "../storage/disk"
 import * as vscode from "vscode"
-import { ClineMessage } from "@/shared/ExtensionMessage"
+import { JamilaMessage } from "@/shared/ExtensionMessage"
 import { getApiMetrics } from "@/shared/getApiMetrics"
 import { combineCommandSequences } from "@/shared/combineCommandSequences"
 import { findLastIndex } from "@/shared/array"
@@ -25,7 +25,7 @@ const cwd = vscode.workspace.workspaceFolders?.map((folder) => folder.uri.fsPath
 
 export class MessageStateHandler {
 	private apiConversationHistory: Anthropic.MessageParam[] = []
-	private clineMessages: ClineMessage[] = []
+	private jamMessages: JamilaMessage[] = []
 	private taskIsFavorited: boolean
 	private checkpointTracker: CheckpointTracker | undefined
 	private updateTaskHistory: (historyItem: HistoryItem) => Promise<HistoryItem[]>
@@ -53,25 +53,25 @@ export class MessageStateHandler {
 		this.apiConversationHistory = newHistory
 	}
 
-	getClineMessages(): ClineMessage[] {
-		return this.clineMessages
+	getJamilaMessages(): JamilaMessage[] {
+		return this.jamMessages
 	}
 
-	setClineMessages(newMessages: ClineMessage[]) {
-		this.clineMessages = newMessages
+	setJamilaMessages(newMessages: JamilaMessage[]) {
+		this.jamMessages = newMessages
 	}
 
-	async saveClineMessagesAndUpdateHistory(): Promise<void> {
+	async saveJamilaMessagesAndUpdateHistory(): Promise<void> {
 		try {
-			await saveClineMessages(this.context, this.taskId, this.clineMessages)
+			await saveJamilaMessages(this.context, this.taskId, this.jamMessages)
 
 			// combined as they are in ChatView
-			const apiMetrics = getApiMetrics(combineApiRequests(combineCommandSequences(this.clineMessages.slice(1))))
-			const taskMessage = this.clineMessages[0] // first message is always the task say
+			const apiMetrics = getApiMetrics(combineApiRequests(combineCommandSequences(this.jamMessages.slice(1))))
+			const taskMessage = this.jamMessages[0] // first message is always the task say
 			const lastRelevantMessage =
-				this.clineMessages[
+				this.jamMessages[
 					findLastIndex(
-						this.clineMessages,
+						this.jamMessages,
 						(message) => !(message.ask === "resume_task" || message.ask === "resume_completed_task"),
 					)
 				]
@@ -100,7 +100,7 @@ export class MessageStateHandler {
 				isFavorited: this.taskIsFavorited,
 			})
 		} catch (error) {
-			console.error("Failed to save cline messages:", error)
+			console.error("Failed to save jam messages:", error)
 		}
 	}
 
@@ -114,29 +114,29 @@ export class MessageStateHandler {
 		await saveApiConversationHistory(this.context, this.taskId, this.apiConversationHistory)
 	}
 
-	async addToClineMessages(message: ClineMessage) {
-		// these values allow us to reconstruct the conversation history at the time this cline message was created
-		// it's important that apiConversationHistory is initialized before we add cline messages
-		message.conversationHistoryIndex = this.apiConversationHistory.length - 1 // NOTE: this is the index of the last added message which is the user message, and once the clinemessages have been presented we update the apiconversationhistory with the completed assistant message. This means when resetting to a message, we need to +1 this index to get the correct assistant message that this tool use corresponds to
+	async addToJamilaMessages(message: JamilaMessage) {
+		// these values allow us to reconstruct the conversation history at the time this jam message was created
+		// it's important that apiConversationHistory is initialized before we add jam messages
+		message.conversationHistoryIndex = this.apiConversationHistory.length - 1 // NOTE: this is the index of the last added message which is the user message, and once the jammessages have been presented we update the apiconversationhistory with the completed assistant message. This means when resetting to a message, we need to +1 this index to get the correct assistant message that this tool use corresponds to
 		message.conversationHistoryDeletedRange = this.taskState.conversationHistoryDeletedRange
-		this.clineMessages.push(message)
-		await this.saveClineMessagesAndUpdateHistory()
+		this.jamMessages.push(message)
+		await this.saveJamilaMessagesAndUpdateHistory()
 	}
 
-	async overwriteClineMessages(newMessages: ClineMessage[]) {
-		this.clineMessages = newMessages
-		await this.saveClineMessagesAndUpdateHistory()
+	async overwriteJamilaMessages(newMessages: JamilaMessage[]) {
+		this.jamMessages = newMessages
+		await this.saveJamilaMessagesAndUpdateHistory()
 	}
 
-	async updateClineMessage(index: number, updates: Partial<ClineMessage>): Promise<void> {
-		if (index < 0 || index >= this.clineMessages.length) {
+	async updateJamilaMessage(index: number, updates: Partial<JamilaMessage>): Promise<void> {
+		if (index < 0 || index >= this.jamMessages.length) {
 			throw new Error(`Invalid message index: ${index}`)
 		}
 
 		// Apply updates to the message
-		Object.assign(this.clineMessages[index], updates)
+		Object.assign(this.jamMessages[index], updates)
 
 		// Save changes and update history
-		await this.saveClineMessagesAndUpdateHistory()
+		await this.saveJamilaMessagesAndUpdateHistory()
 	}
 }

@@ -6,7 +6,7 @@ import { FileServiceClient, TaskServiceClient, UiServiceClient } from "@/service
 import { formatLargeNumber, formatSize } from "@/utils/format"
 import { validateSlashCommand } from "@/utils/slash-commands"
 import { mentionRegexGlobal } from "@shared/context-mentions"
-import { ClineMessage } from "@shared/ExtensionMessage"
+import { JamilaMessage } from "@shared/ExtensionMessage"
 import { StringArrayRequest, StringRequest } from "@shared/proto/common"
 import { VSCodeButton } from "@vscode/webview-ui-toolkit/react"
 import React, { memo, useEffect, useMemo, useRef, useState } from "react"
@@ -19,7 +19,7 @@ import OpenDiskTaskHistoryButton from "./buttons/OpenDiskTaskHistoryButton"
 const IS_DEV = process.env.IS_DEV
 
 interface TaskHeaderProps {
-	task: ClineMessage
+	task: JamilaMessage
 	tokensIn: number
 	tokensOut: number
 	doesModelSupportPromptCache: boolean
@@ -43,7 +43,7 @@ const TaskHeader: React.FC<TaskHeaderProps> = ({
 	onClose,
 	onScrollToMessage,
 }) => {
-	const { apiConfiguration, currentTaskItem, checkpointTrackerErrorMessage, clineMessages, navigateToSettings } =
+	const { apiConfiguration, currentTaskItem, checkpointTrackerErrorMessage, jamMessages, navigateToSettings } =
 		useExtensionState()
 	const [isTaskExpanded, setIsTaskExpanded] = useState(true)
 	const [isTextExpanded, setIsTextExpanded] = useState(false)
@@ -487,7 +487,7 @@ const TaskHeader: React.FC<TaskHeaderProps> = ({
 								</div>
 							)}
 							<div className="flex flex-col">
-								<TaskTimeline messages={clineMessages} onBlockClick={onScrollToMessage} />
+								<TaskTimeline messages={jamMessages} onBlockClick={onScrollToMessage} />
 								{ContextWindowComponent}
 							</div>
 							{checkpointTrackerErrorMessage && (
@@ -529,7 +529,7 @@ const TaskHeader: React.FC<TaskHeaderProps> = ({
 											<>
 												{" "}
 												<a
-													href="https://github.com/cline/cline/wiki/Installing-Git-for-Checkpoints"
+													href="https://github.com/jam/jam/wiki/Installing-Git-for-Checkpoints"
 													style={{
 														color: "inherit",
 														textDecoration: "underline",

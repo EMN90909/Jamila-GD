@@ -178,11 +178,11 @@ export function createAntmlToolPrompt(toolDefs: ToolDefinition[], includeInstruc
 	return prompt // Don't trim - preserve exact formatting
 }
 
-// --- SimpleXML Functions (Cline's internal format) ---
+// --- SimpleXML Functions (Jamila's internal format) ---
 
 /**
  * Converts a single tool definition to the SimpleXML format
- * as used by Cline's current system prompts for non-ANTML models.
+ * as used by Jamila's current system prompts for non-ANTML models.
  * @param toolDef The tool definition object
  * @returns The tool definition formatted for SimpleXML usage
  */

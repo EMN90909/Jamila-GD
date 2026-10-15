@@ -33,7 +33,7 @@ import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState } fro
 import { useInterval } from "react-use"
 import styled from "styled-components"
 import * as vscodemodels from "vscode"
-import { ClineAccountInfoCard } from "./ClineAccountInfoCard"
+import { JamilaAccountInfoCard } from "./JamilaAccountInfoCard"
 import OllamaModelPicker from "./OllamaModelPicker"
 import OpenRouterModelPicker, { ModelDescriptionMarkdown, OPENROUTER_MODEL_PICKER_Z_INDEX } from "./OpenRouterModelPicker"
 import RequestyModelPicker from "./RequestyModelPicker"
@@ -257,7 +257,7 @@ const ApiOptions = ({
 						minWidth: 130,
 						position: "relative",
 					}}>
-					<VSCodeOption value="cline">Cline</VSCodeOption>
+					<VSCodeOption value="jam">Jamila</VSCodeOption>
 					<VSCodeOption value="openrouter">OpenRouter</VSCodeOption>
 					<VSCodeOption value="anthropic">Anthropic</VSCodeOption>
 					<VSCodeOption value="claude-code">Claude Code</VSCodeOption>
@@ -287,9 +287,9 @@ const ApiOptions = ({
 				</VSCodeDropdown>
 			</DropdownContainer>
 
-			{selectedProvider === "cline" && (
+			{selectedProvider === "jam" && (
 				<div style={{ marginBottom: 14, marginTop: 4 }}>
-					<ClineAccountInfoCard />
+					<JamilaAccountInfoCard />
 				</div>
 			)}
 
@@ -901,7 +901,7 @@ const ApiOptions = ({
 						</VSCodeLink>{" "}
 						feature to use it with this extension.{" "}
 						<span style={{ color: "var(--vscode-errorForeground)" }}>
-							(<span style={{ fontWeight: 500 }}>Note:</span> Cline uses complex prompts and works best with Claude
+							(<span style={{ fontWeight: 500 }}>Note:</span> Jamila uses complex prompts and works best with Claude
 							models. Less capable models may not work as expected.)
 						</span>
 					</p>
@@ -1139,7 +1139,7 @@ const ApiOptions = ({
 							</VSCodeLink>
 						)}
 						<span style={{ color: "var(--vscode-errorForeground)" }}>
-							(<span style={{ fontWeight: 500 }}>Note:</span> Cline uses complex prompts and works best with Claude
+							(<span style={{ fontWeight: 500 }}>Note:</span> Jamila uses complex prompts and works best with Claude
 							models. Less capable models may not work as expected.)
 						</span>
 					</p>
@@ -1274,7 +1274,7 @@ const ApiOptions = ({
 				</p>
 			)}
 
-			{selectedProvider === "cline" && showModelOptions && (
+			{selectedProvider === "jam" && showModelOptions && (
 				<>
 					<VSCodeCheckbox
 						style={{ marginTop: -10 }}
@@ -1326,7 +1326,7 @@ const ApiOptions = ({
 			)}
 
 			{selectedProvider !== "openrouter" &&
-				selectedProvider !== "cline" &&
+				selectedProvider !== "jam" &&
 				selectedProvider !== "anthropic" &&
 				selectedProvider !== "asksage" &&
 				selectedProvider !== "openai" &&
@@ -1380,7 +1380,7 @@ const ApiOptions = ({
 					</>
 				)}
 
-			{selectedProvider === "cline" && showModelOptions && <OpenRouterModelPicker isPopup={isPopup} />}
+			{selectedProvider === "jam" && showModelOptions && <OpenRouterModelPicker isPopup={isPopup} />}
 
 			{modelIdErrorMessage && (
 				<p
@@ -1513,7 +1513,7 @@ export const ModelInfoView = ({
 		/>,
 		<ModelInfoSupportsItem
 			key="supportsBrowserUse"
-			isSupported={modelInfo.supportsImages ?? false} // cline browser tool uses image recognition for navigation (requires model image support).
+			isSupported={modelInfo.supportsImages ?? false} // jam browser tool uses image recognition for navigation (requires model image support).
 			supportsLabel="Supports browser use"
 			doesNotSupportLabel="Does not support browser use"
 		/>,

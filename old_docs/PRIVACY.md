@@ -1,1 +1,1 @@
-See [https://cline.bot/privacy](https://cline.bot/privacy) for our privacy policy.
+See [https://jam.bot/privacy](https://jam.bot/privacy) for our privacy policy.

@@ -1,6 +1,6 @@
 syntax = "proto3";
-package cline;
-option java_package = "bot.cline.proto";
+package jam;
+option java_package = "bot.jam.proto";
 option java_multiple_files = true;
 
 import "common.proto";
@@ -125,7 +125,7 @@ message ApiConfiguration {
   optional string api_base_url = 4;
   
   // Provider-specific API keys
-  optional string cline_api_key = 5;
+  optional string jam_api_key = 5;
   optional string openrouter_api_key = 6;
   optional string anthropic_base_url = 7;
   optional string openai_api_key = 8;

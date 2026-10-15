@@ -1,8 +1,8 @@
 import type { ToggleWindsurfRuleRequest } from "../../../shared/proto/file"
-import { ClineRulesToggles } from "../../../shared/proto/file"
+import { JamilaRulesToggles } from "../../../shared/proto/file"
 import type { Controller } from "../index"
 import { getWorkspaceState, updateWorkspaceState } from "../../../core/storage/state"
-import { ClineRulesToggles as AppClineRulesToggles } from "@shared/cline-rules"
+import { JamilaRulesToggles as AppJamilaRulesToggles } from "@shared/jam-rules"
 
 /**
  * Toggles a Windsurf rule (enable or disable)
@@ -10,7 +10,7 @@ import { ClineRulesToggles as AppClineRulesToggles } from "@shared/cline-rules"
  * @param request The toggle request
  * @returns The updated Windsurf rule toggles
  */
-export async function toggleWindsurfRule(controller: Controller, request: ToggleWindsurfRuleRequest): Promise<ClineRulesToggles> {
+export async function toggleWindsurfRule(controller: Controller, request: ToggleWindsurfRuleRequest): Promise<JamilaRulesToggles> {
 	const { rulePath, enabled } = request
 
 	if (!rulePath || typeof enabled !== "boolean") {
@@ -22,10 +22,10 @@ export async function toggleWindsurfRule(controller: Controller, request: Toggle
 	}
 
 	// Update the toggles
-	const toggles = ((await getWorkspaceState(controller.context, "localWindsurfRulesToggles")) as AppClineRulesToggles) || {}
+	const toggles = ((await getWorkspaceState(controller.context, "localWindsurfRulesToggles")) as AppJamilaRulesToggles) || {}
 	toggles[rulePath] = enabled
 	await updateWorkspaceState(controller.context, "localWindsurfRulesToggles", toggles)
 
 	// Return the toggles directly
-	return ClineRulesToggles.create({ toggles: toggles })
+	return JamilaRulesToggles.create({ toggles: toggles })
 }

@@ -42,9 +42,9 @@ async function main() {
 			addTypeNameToFqn(name, `proto.host.${name}`)
 		}
 	}
-	for (const [name, def] of Object.entries(proto.cline)) {
+	for (const [name, def] of Object.entries(proto.jam)) {
 		if (def && !("service" in def)) {
-			addTypeNameToFqn(name, `proto.cline.${name}`)
+			addTypeNameToFqn(name, `proto.jam.${name}`)
 		}
 	}
 

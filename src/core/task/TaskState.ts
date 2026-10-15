@@ -1,7 +1,7 @@
 import { Anthropic } from "@anthropic-ai/sdk"
 import { AssistantMessageContent } from "@core/assistant-message"
 import { StreamingJsonReplacer } from "@core/assistant-message/diff-json"
-import { ClineAskResponse } from "@shared/WebviewMessage"
+import { JamilaAskResponse } from "@shared/WebviewMessage"
 
 export class TaskState {
 	// Streaming flags
@@ -24,7 +24,7 @@ export class TaskState {
 	lastProcessedJsonLength: number = 0
 
 	// Ask/Response handling
-	askResponse?: ClineAskResponse
+	askResponse?: JamilaAskResponse
 	askResponseText?: string
 	askResponseImages?: string[]
 	askResponseFiles?: string[]

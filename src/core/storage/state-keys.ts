@@ -1,6 +1,6 @@
 export type SecretKey =
 	| "apiKey"
-	| "clineApiKey"
+	| "jamApiKey"
 	| "openRouterApiKey"
 	| "awsAccessKey"
 	| "awsSecretKey"
@@ -49,7 +49,7 @@ export type GlobalStateKey =
 	| "azureApiVersion"
 	| "openRouterProviderSorting"
 	| "autoApprovalSettings"
-	| "globalClineRulesToggles"
+	| "globalJamilaRulesToggles"
 	| "globalWorkflowToggles"
 	| "browserSettings"
 	| "userInfo"
@@ -82,7 +82,7 @@ export type GlobalStateKey =
 	| "claudeCodePath"
 
 export type LocalStateKey =
-	| "localClineRulesToggles"
+	| "localJamilaRulesToggles"
 	| "chatSettings"
 	// Current active model configuration (per workspace)
 	| "apiProvider"

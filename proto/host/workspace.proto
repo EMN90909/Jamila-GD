@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package host;
-option java_package = "bot.cline.host.proto";
+option java_package = "bot.jam.host.proto";
 option java_multiple_files = true;
 
 // Provides methods for working with workspaces/projects.
@@ -12,7 +12,7 @@ service WorkspaceService {
 
 message GetWorkspacePathsRequest {
   // The unique ID for the workspace/project.
-  // This is currently optional in vscode. It is required in other environments where cline is running at
+  // This is currently optional in vscode. It is required in other environments where jam is running at
   // the application level, and the user can open multiple projects.
   optional string id = 1;
 }

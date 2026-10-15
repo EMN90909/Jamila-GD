@@ -7,7 +7,7 @@ import type { BrowserSettings } from "@shared/BrowserSettings"
 import { posthogClientProvider } from "../PostHogClientProvider"
 
 /**
- * TelemetryService handles telemetry event tracking for the Cline extension
+ * TelemetryService handles telemetry event tracking for the Jamila extension
  * Uses PostHog analytics to track user interactions and system events
  * Respects user privacy settings and VSCode's global telemetry configuration
  */
@@ -138,11 +138,11 @@ class TelemetryService {
 		if (globalTelemetryEnabled) {
 			this.telemetryEnabled = didUserOptIn
 		} else {
-			// Only show warning if user has opted in to Cline telemetry but VS Code telemetry is disabled
+			// Only show warning if user has opted in to Jamila telemetry but VS Code telemetry is disabled
 			if (didUserOptIn) {
 				void vscode.window
 					.showWarningMessage(
-						"Anonymous Cline error and usage reporting is enabled, but VSCode telemetry is disabled. To enable error and usage reporting for this extension, enable VSCode telemetry in settings.",
+						"Anonymous Jamila error and usage reporting is enabled, but VSCode telemetry is disabled. To enable error and usage reporting for this extension, enable VSCode telemetry in settings.",
 						"Open Settings",
 					)
 					.then((selection) => {
@@ -268,7 +268,7 @@ class TelemetryService {
 	}
 
 	/**
-	 * Records when cline calls the task completion_result tool signifying that cline is done with the task
+	 * Records when jam calls the task completion_result tool signifying that jam is done with the task
 	 * @param taskId Unique identifier for the task
 	 * @param collect If true, collect event instead of sending
 	 */

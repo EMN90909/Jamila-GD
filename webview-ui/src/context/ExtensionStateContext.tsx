@@ -11,7 +11,7 @@ import { EmptyRequest, StringRequest } from "@shared/proto/common"
 import { UpdateSettingsRequest } from "@shared/proto/state"
 import { WebviewProviderType as WebviewProviderTypeEnum, WebviewProviderTypeRequest } from "@shared/proto/ui"
 import { TerminalProfile } from "@shared/proto/state"
-import { convertProtoToClineMessage } from "@shared/proto-conversions/cline-message"
+import { convertProtoToJamilaMessage } from "@shared/proto-conversions/jam-message"
 import { convertProtoMcpServersToMcpServers } from "@shared/proto-conversions/mcp/mcp-server-conversion"
 import { DEFAULT_AUTO_APPROVAL_SETTINGS } from "@shared/AutoApprovalSettings"
 import { DEFAULT_BROWSER_SETTINGS, BrowserSettings } from "@shared/BrowserSettings"
@@ -70,8 +70,8 @@ interface ExtensionStateContextType extends ExtensionState {
 	setChatSettings: (value: ChatSettings) => void
 	setMcpServers: (value: McpServer[]) => void
 	setRequestyModels: (value: Record<string, ModelInfo>) => void
-	setGlobalClineRulesToggles: (toggles: Record<string, boolean>) => void
-	setLocalClineRulesToggles: (toggles: Record<string, boolean>) => void
+	setGlobalJamilaRulesToggles: (toggles: Record<string, boolean>) => void
+	setLocalJamilaRulesToggles: (toggles: Record<string, boolean>) => void
 	setLocalCursorRulesToggles: (toggles: Record<string, boolean>) => void
 	setLocalWindsurfRulesToggles: (toggles: Record<string, boolean>) => void
 	setLocalWorkflowToggles: (toggles: Record<string, boolean>) => void
@@ -179,7 +179,7 @@ export const ExtensionStateContextProvider: React.FC<{
 
 	const [state, setState] = useState<ExtensionState>({
 		version: "",
-		clineMessages: [],
+		jamMessages: [],
 		taskHistory: [],
 		shouldShowAnnouncement: false,
 		autoApprovalSettings: DEFAULT_AUTO_APPROVAL_SETTINGS,
@@ -191,8 +191,8 @@ export const ExtensionStateContextProvider: React.FC<{
 		planActSeparateModelsSetting: true,
 		enableCheckpointsSetting: true,
 		mcpRichDisplayEnabled: true,
-		globalClineRulesToggles: {},
-		localClineRulesToggles: {},
+		globalJamilaRulesToggles: {},
+		localJamilaRulesToggles: {},
 		localCursorRulesToggles: {},
 		localWindsurfRulesToggles: {},
 		localWorkflowToggles: {},
@@ -298,7 +298,7 @@ export const ExtensionStateContextProvider: React.FC<{
 										config.doubaoApiKey,
 										config.mistralApiKey,
 										config.vsCodeLmModelSelector,
-										config.clineApiKey,
+										config.jamApiKey,
 										config.asksageApiKey,
 										config.xaiApiKey,
 										config.sambanovaApiKey,
@@ -449,14 +449,14 @@ export const ExtensionStateContextProvider: React.FC<{
 						return
 					}
 
-					const partialMessage = convertProtoToClineMessage(protoMessage)
+					const partialMessage = convertProtoToJamilaMessage(protoMessage)
 					setState((prevState) => {
 						// worth noting it will never be possible for a more up-to-date message to be sent here or in normal messages post since the presentAssistantContent function uses lock
-						const lastIndex = findLastIndex(prevState.clineMessages, (msg) => msg.ts === partialMessage.ts)
+						const lastIndex = findLastIndex(prevState.jamMessages, (msg) => msg.ts === partialMessage.ts)
 						if (lastIndex !== -1) {
-							const newClineMessages = [...prevState.clineMessages]
-							newClineMessages[lastIndex] = partialMessage
-							return { ...prevState, clineMessages: newClineMessages }
+							const newJamilaMessages = [...prevState.jamMessages]
+							newJamilaMessages[lastIndex] = partialMessage
+							return { ...prevState, jamMessages: newJamilaMessages }
 						}
 						return prevState
 					})
@@ -571,7 +571,7 @@ export const ExtensionStateContextProvider: React.FC<{
 		})
 
 		// Subscribe to focus chat input events
-		const clientId = (window as any).clineClientId
+		const clientId = (window as any).jamClientId
 		if (clientId) {
 			const request = StringRequest.create({ value: clientId })
 			focusChatInputUnsubscribeRef.current = UiServiceClient.subscribeToFocusChatInput(request, {
@@ -684,8 +684,8 @@ export const ExtensionStateContextProvider: React.FC<{
 		showHistory,
 		showAccount,
 		showAnnouncement,
-		globalClineRulesToggles: state.globalClineRulesToggles || {},
-		localClineRulesToggles: state.localClineRulesToggles || {},
+		globalJamilaRulesToggles: state.globalJamilaRulesToggles || {},
+		localJamilaRulesToggles: state.localJamilaRulesToggles || {},
 		localCursorRulesToggles: state.localCursorRulesToggles || {},
 		localWindsurfRulesToggles: state.localWindsurfRulesToggles || {},
 		localWorkflowToggles: state.localWorkflowToggles || {},
@@ -804,15 +804,15 @@ export const ExtensionStateContextProvider: React.FC<{
 				console.error("Failed to update chat settings:", error)
 			}
 		},
-		setGlobalClineRulesToggles: (toggles) =>
+		setGlobalJamilaRulesToggles: (toggles) =>
 			setState((prevState) => ({
 				...prevState,
-				globalClineRulesToggles: toggles,
+				globalJamilaRulesToggles: toggles,
 			})),
-		setLocalClineRulesToggles: (toggles) =>
+		setLocalJamilaRulesToggles: (toggles) =>
 			setState((prevState) => ({
 				...prevState,
-				localClineRulesToggles: toggles,
+				localJamilaRulesToggles: toggles,
 			})),
 		setLocalCursorRulesToggles: (toggles) =>
 			setState((prevState) => ({

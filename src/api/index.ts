@@ -19,7 +19,7 @@ import { QwenHandler } from "./providers/qwen"
 import { MistralHandler } from "./providers/mistral"
 import { DoubaoHandler } from "./providers/doubao"
 import { VsCodeLmHandler } from "./providers/vscode-lm"
-import { ClineHandler } from "./providers/cline"
+import { JamilaHandler } from "./providers/jam"
 import { LiteLlmHandler } from "./providers/litellm"
 import { FireworksHandler } from "./providers/fireworks"
 import { AskSageHandler } from "./providers/asksage"
@@ -77,8 +77,8 @@ function createHandlerForProvider(apiProvider: string | undefined, options: any)
 			return new MistralHandler(options)
 		case "vscode-lm":
 			return new VsCodeLmHandler(options)
-		case "cline":
-			return new ClineHandler(options)
+		case "jam":
+			return new JamilaHandler(options)
 		case "litellm":
 			return new LiteLlmHandler(options)
 		case "nebius":

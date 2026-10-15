@@ -54,7 +54,7 @@ archive.glob("**/*", {
 	ignore: ["standalone.zip"],
 })
 
-// Add the whole cline directory under "extension"
+// Add the whole jam directory under "extension"
 archive.directory(process.cwd(), "extension", (entry) => {
 	// Skip certain directories.
 	const exclude = [
