@@ -145,6 +145,7 @@ import {
 	type RemoteWorkspaceEnvironment,
 	remoteWorkspaceEnvironmentFromContext,
 } from "@/lib/workspace-environment";
+import { readWorkspacePanelWidth } from "@/lib/workspace-panel";
 import {
 	filterWorkspacePaths,
 	isTaskWorktreePath,
@@ -199,6 +200,25 @@ const DiffView = dynamic(
 			(module) => module.DiffView,
 		),
 	{ loading: viewLoading, ssr: false },
+);
+
+const loadProjectFilesPanel = () =>
+	import("@/components/views/chat/project-files-panel");
+
+const ProjectFilesPanel = dynamic(
+	() => loadProjectFilesPanel().then((module) => module.ProjectFilesPanel),
+	{
+		// Holds the panel's grid cell at its final width while the chunk loads;
+		// an empty cell would let the composer flow into it for a few frames.
+		loading: () => (
+			<aside
+				aria-hidden
+				className="col-start-2 row-span-2 row-start-1 border-l border-border bg-background"
+				style={{ width: readWorkspacePanelWidth() }}
+			/>
+		),
+		ssr: false,
+	},
 );
 
 function makeThreadId(): string {
@@ -1219,6 +1239,11 @@ function ChatThreadPane({
 		writeWorkInToWindow(next);
 	}, []);
 	const [showDiffView, setShowDiffView] = useState(false);
+	const [showFilesPanel, setShowFilesPanel] = useState(false);
+	const toggleFilesPanel = useCallback(
+		() => setShowFilesPanel((current) => !current),
+		[],
+	);
 	const [deletingSession, setDeletingSession] = useState(false);
 	const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 	const [renamingSession, setRenamingSession] = useState(false);
@@ -2508,6 +2533,14 @@ function ChatThreadPane({
 		],
 	);
 
+	// Fetch the panel's code as soon as a session could show it, so the first
+	// toggle opens it without waiting on the chunk.
+	const mayBrowseFiles =
+		!isCloudSession && Boolean(resolvedWorkspaceRoot) && !isWelcomeState;
+	useEffect(() => {
+		if (mayBrowseFiles) void loadProjectFilesPanel();
+	}, [mayBrowseFiles]);
+
 	const isAppReady =
 		chatTransportState === "connected" && providersLoaded && workspacesLoaded;
 
@@ -2575,6 +2608,10 @@ function ChatThreadPane({
 		cloudSessionError?.code === "github_not_connected"
 			? cloudSessionError.connectUrl
 			: undefined;
+	// Cloud runs have no reachable workspace, and the welcome state has no
+	// session to browse alongside yet.
+	const canBrowseFiles = mayBrowseFiles;
+	const filesPanelVisible = canBrowseFiles && showFilesPanel;
 
 	return (
 		<WorkspaceProvider value={workspaceContextValue}>
@@ -2583,7 +2620,11 @@ function ChatThreadPane({
 				className={
 					isWelcomeState
 						? "grid h-full min-h-0 flex-1 grid-rows-[minmax(0,1fr)] overflow-hidden"
-						: "grid h-full min-h-0 flex-1 grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)_auto] overflow-hidden"
+						: filesPanelVisible
+							? // The panel is placed explicitly in column 2 spanning both
+								// rows, so the transcript and composer auto-flow into column 1.
+								"grid h-full min-h-0 flex-1 grid-cols-[minmax(0,1fr)_auto] grid-rows-[minmax(0,1fr)_auto] overflow-hidden"
+							: "grid h-full min-h-0 flex-1 grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)_auto] overflow-hidden"
 				}
 				disabled={isCloudSessionExpired}
 				description={
@@ -2612,6 +2653,8 @@ function ChatThreadPane({
 								onDeleteSession={requestDeleteSession}
 								onNewThread={onNewThread}
 								onOpenDiff={handleOpenDiff}
+								onToggleFiles={canBrowseFiles ? toggleFilesPanel : undefined}
+								filesOpen={filesPanelVisible}
 								onRenameTitle={handleRenameTitle}
 								renamingTitle={renamingSession}
 								status={headerStatus}
@@ -2721,6 +2764,15 @@ function ChatThreadPane({
 					onWorkInChange={canWorkInWorktree ? setWorkIn : undefined}
 					workIn={workIn}
 				/>
+				{filesPanelVisible ? (
+					<ProjectFilesPanel
+						cwd={config.cwd || config.workspaceRoot}
+						environmentId={environmentId}
+						fileDiffs={fileDiffs}
+						onClose={toggleFilesPanel}
+						workspaceRoot={resolvedWorkspaceRoot}
+					/>
+				) : null}
 			</AttachmentDropZone>
 			<AlertDialog
 				open={deleteConfirmOpen}
