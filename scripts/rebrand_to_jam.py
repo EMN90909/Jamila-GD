@@ -10,7 +10,7 @@ import os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-REPLACEMENTS = (("CLINE", "JAM"), ("Cline", "Jam"), ("cline", "jam"))
+REPLACEMENTS = (("CLINE", "JAM"), ("Cline", "Jamila"), ("cline", "jam"))
 TEXT_EXTENSIONS = {
     ".ts", ".tsx", ".js", ".jsx", ".json", ".jsonc", ".md", ".mdx",
     ".yaml", ".yml", ".toml", ".xml", ".html", ".css", ".scss", ".less",
