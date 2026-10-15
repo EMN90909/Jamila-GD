@@ -6,6 +6,7 @@ on:
       - Main
     paths:
       - .github/workflows/apply-jamila-rebrand.yml
+      - scripts/rebrand_to_jam.py
   workflow_dispatch:
 
 permissions:
