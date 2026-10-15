@@ -1,10 +1,14 @@
 import { createHash, randomUUID } from "node:crypto";
 import {
+	type Dirent,
 	existsSync,
 	mkdirSync,
+	readdirSync,
 	readFileSync,
 	renameSync,
 	rmSync,
+	statSync,
+	utimesSync,
 	writeFileSync,
 } from "node:fs";
 import { dirname, join, win32 } from "node:path";
@@ -71,5 +75,41 @@ export function materializeEmbeddedResources(
 			rmSync(temporary, { force: true });
 		}
 	}
+	const now = new Date();
+	try {
+		utimesSync(directory, now, now);
+	} catch {}
 	return directory;
+}
+
+const STALE_BUILD_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Removes sibling builds not materialized for a week. Only safe for callers
+ * whose processes re-extract a pruned build instead of holding its directory.
+ */
+export function pruneStaleEmbeddedResources(
+	root: string,
+	current: string,
+): void {
+	const now = Date.now();
+	let entries: Dirent[];
+	try {
+		entries = readdirSync(root, { withFileTypes: true });
+	} catch {
+		return;
+	}
+	for (const entry of entries) {
+		const path = join(root, entry.name);
+		if (
+			path === current ||
+			!entry.isDirectory() ||
+			!/^[a-f0-9]{64}$/.test(entry.name)
+		)
+			continue;
+		try {
+			if (now - statSync(path).mtimeMs > STALE_BUILD_MS)
+				rmSync(path, { recursive: true, force: true });
+		} catch {}
+	}
 }

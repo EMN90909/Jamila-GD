@@ -1,10 +1,18 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+	existsSync,
+	mkdtempSync,
+	readFileSync,
+	rmSync,
+	utimesSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, it } from "vitest";
 import {
 	materializeEmbeddedResources,
 	packEmbeddedResources,
+	pruneStaleEmbeddedResources,
 } from "./embedded-resources";
 
 const roots: string[] = [];
@@ -47,6 +55,36 @@ it("retains the previous build when a new build is materialized", () => {
 	);
 	expect(oldDirectory).not.toBe(newDirectory);
 	expect(readFileSync(join(oldDirectory, "index.js"), "utf8")).toBe("old");
+});
+
+it("prunes builds unused for a week", () => {
+	const root = temporaryRoot();
+	const staleDirectory = materializeEmbeddedResources(
+		packEmbeddedResources({
+			"index.js": Buffer.from("stale").toString("base64"),
+		}),
+		root,
+	);
+	const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
+	utimesSync(staleDirectory, eightDaysAgo, eightDaysAgo);
+	const recentDirectory = materializeEmbeddedResources(
+		packEmbeddedResources({
+			"index.js": Buffer.from("recent").toString("base64"),
+		}),
+		root,
+	);
+	const currentDirectory = materializeEmbeddedResources(
+		packEmbeddedResources({
+			"index.js": Buffer.from("current").toString("base64"),
+		}),
+		root,
+	);
+	// Materializing alone never prunes: the dashboard serves its directory for its lifetime.
+	expect(existsSync(staleDirectory)).toBe(true);
+	pruneStaleEmbeddedResources(root, currentDirectory);
+	expect(existsSync(staleDirectory)).toBe(false);
+	expect(existsSync(recentDirectory)).toBe(true);
+	expect(existsSync(currentDirectory)).toBe(true);
 });
 
 it("rejects a mismatched archive checksum", () => {
