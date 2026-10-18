@@ -6,6 +6,7 @@ import { useEvent, useSize } from "react-use"
 
 import CreditLimitError from "@/components/chat/CreditLimitError"
 import { OptionsButtons } from "@/components/chat/OptionsButtons"
+import EditableAgentPlan from "@/components/chat/EditableAgentPlan"
 import TaskFeedbackButtons from "@/components/chat/TaskFeedbackButtons"
 import { CheckmarkControl } from "@/components/common/CheckmarkControl"
 import CodeBlock, { CODE_BLOCK_BG_COLOR } from "@/components/common/CodeBlock"
@@ -1675,6 +1676,11 @@ export const ChatRowContent = ({
 					}
 					return (
 						<WithCopyButton ref={contentRef} onMouseUp={handleMouseUp} textToCopy={response} position="bottom-right">
+							<EditableAgentPlan
+								response={response || ""}
+								canEdit={Boolean(isLast && lastModifiedMessage?.ask === "plan_mode_respond")}
+								onRequestRevision={sendMessageFromChatRow ? (text) => sendMessageFromChatRow(text, [], []) : undefined}
+							/>
 							<Markdown markdown={response} />
 							<OptionsButtons
 								options={options}

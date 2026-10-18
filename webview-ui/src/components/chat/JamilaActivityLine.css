@@ -1,0 +1,16 @@
+.jamila-activity{margin:6px 15px 8px;padding:10px 13px;border:1px solid var(--vscode-editorGroup-border);border-radius:12px;background:color-mix(in srgb,var(--vscode-editor-background) 85%,var(--vscode-foreground) 5%);color:var(--vscode-foreground);min-width:0}
+.jamila-activity__heading{display:flex;align-items:center;gap:9px;width:100%;padding:0;border:0;background:transparent;color:inherit;text-align:left;font:inherit;cursor:pointer}
+.jamila-activity__heading:focus-visible{outline:2px solid var(--vscode-focusBorder);outline-offset:4px;border-radius:4px}
+.jamila-activity__glyph{flex:none;font-size:16px;color:var(--vscode-focusBorder);opacity:.75}
+.jamila-activity[data-working="true"] .jamila-activity__glyph{animation:jamila-activity-breathe 1.6s ease-in-out infinite}
+.jamila-activity__label{flex:1;min-width:0;font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.jamila-activity[data-working="true"] .jamila-activity__label{background:linear-gradient(100deg,var(--vscode-descriptionForeground) 28%,var(--vscode-foreground) 50%,var(--vscode-descriptionForeground) 72%);background-size:240% 100%;background-clip:text;-webkit-background-clip:text;color:transparent;animation:jamila-activity-shimmer 2s linear infinite}
+.jamila-activity__timer{font-size:11px;font-variant-numeric:tabular-nums;color:var(--vscode-descriptionForeground);flex:none}
+.jamila-activity__chevron{opacity:.65;font-size:12px}
+.jamila-activity__trace{list-style:none;margin:12px 0 0 6px;padding:0 0 0 13px;border-left:1px solid var(--vscode-editorGroup-border);display:flex;flex-direction:column;gap:9px}
+.jamila-activity__step{display:flex;gap:9px;align-items:center;color:var(--vscode-descriptionForeground);font-size:11px;overflow-wrap:anywhere}
+.jamila-activity__step .codicon{font-size:11px}
+.jamila-activity__current{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--vscode-focusBorder);animation:jamila-activity-breathe 1.6s ease-in-out infinite}
+@keyframes jamila-activity-breathe{0%,100%{opacity:.45;transform:scale(.9)}50%{opacity:1;transform:scale(1.1)}}
+@keyframes jamila-activity-shimmer{to{background-position:-140% 0}}
+@media(prefers-reduced-motion:reduce){.jamila-activity__glyph,.jamila-activity__current,.jamila-activity__label{animation:none!important}.jamila-activity[data-working="true"] .jamila-activity__label{background:none;color:var(--vscode-foreground)}}

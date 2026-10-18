@@ -25,6 +25,7 @@ import Announcement from "@/components/chat/Announcement"
 import BrowserSessionRow from "@/components/chat/BrowserSessionRow"
 import ChatRow from "@/components/chat/ChatRow"
 import ChatTextArea from "@/components/chat/ChatTextArea"
+import JamilaActivityLine from "@/components/chat/JamilaActivityLine"
 import QuotedMessagePreview from "@/components/chat/QuotedMessagePreview"
 import TaskHeader from "@/components/chat/task-header/TaskHeader"
 import TelemetryBanner from "@/components/common/TelemetryBanner"
@@ -1178,6 +1179,7 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 							initialTopMostItemIndex={groupedMessages.length - 1}
 						/>
 					</div>
+					<JamilaActivityLine messages={modifiedMessages} working={isStreaming && !didClickCancel} waitingForApproval={enableButtons && Boolean(jamAsk)} taskKey={task.ts} />
 					<AutoApproveBar />
 					{showScrollToBottom ? (
 						<div
@@ -1217,7 +1219,7 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 									{primaryButtonText}
 								</VSCodeButton>
 							)}
-							{(secondaryButtonText || isStreaming) && (
+							{secondaryButtonText && !isStreaming && (
 								<VSCodeButton
 									appearance="secondary"
 									disabled={!enableButtons && !(isStreaming && !didClickCancel)}
@@ -1252,6 +1254,8 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 				inputValue={inputValue}
 				setInputValue={setInputValue}
 				sendingDisabled={sendingDisabled}
+				isStreaming={isStreaming && !didClickCancel}
+				onStop={() => handleSecondaryButtonClick(inputValue, selectedImages, selectedFiles)}
 				placeholderText={placeholderText}
 				selectedImages={selectedImages}
 				setSelectedImages={setSelectedImages}

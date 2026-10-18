@@ -1,0 +1,18 @@
+.jamila-plan{padding:13px;margin:8px 0 14px;border:1px solid var(--vscode-editorGroup-border);border-radius:12px;background:color-mix(in srgb,var(--vscode-editor-background) 92%,var(--vscode-foreground) 3%);color:var(--vscode-foreground)}
+.jamila-plan__top{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:12px}
+.jamila-plan__top .codicon{color:var(--vscode-focusBorder)}
+.jamila-plan__badge{font-size:10px;padding:3px 7px;border-radius:999px;background:var(--vscode-textBlockQuote-background);color:var(--vscode-descriptionForeground)}
+.jamila-plan__steps{list-style:none;padding:0;margin:13px 0;display:flex;flex-direction:column;gap:10px}
+.jamila-plan__steps li{display:flex;align-items:flex-start;gap:9px;font-size:12px;line-height:1.4;overflow-wrap:anywhere;min-width:0}
+.jamila-plan__number{flex:none;display:grid;place-items:center;border:1px solid var(--vscode-editorGroup-border);border-radius:7px;height:22px;width:22px;color:var(--vscode-descriptionForeground);font-size:11px}
+.jamila-plan__edit{display:inline-flex;gap:6px;align-items:center;margin-top:5px;padding:7px 10px;border:1px solid var(--vscode-editorGroup-border);border-radius:8px;background:var(--vscode-button-secondaryBackground);color:var(--vscode-button-secondaryForeground);font:inherit;font-size:12px;cursor:pointer}
+.jamila-plan__editor{display:flex;flex-direction:column;gap:9px;margin-top:13px}
+.jamila-plan__editor label{font-size:12px;font-weight:600}
+.jamila-plan__editor textarea{box-sizing:border-box;width:100%;min-height:130px;resize:vertical;border:1px solid var(--vscode-input-border);border-radius:9px;padding:10px;line-height:1.5;background:var(--vscode-input-background);color:var(--vscode-input-foreground);font-family:var(--vscode-editor-font-family,monospace);font-size:12px}
+.jamila-plan__actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.jamila-plan__actions button{border:1px solid var(--vscode-editorGroup-border);border-radius:8px;padding:7px 10px;color:var(--vscode-button-secondaryForeground);background:var(--vscode-button-secondaryBackground);font:inherit;font-size:12px;cursor:pointer}
+.jamila-plan__actions .jamila-plan__primary{background:var(--vscode-button-background);color:var(--vscode-button-foreground)}
+.jamila-plan button:disabled{opacity:.55;cursor:not-allowed}
+.jamila-plan button:focus-visible{outline:2px solid var(--vscode-focusBorder);outline-offset:2px}
+.jamila-plan__error{color:var(--vscode-errorForeground);font-size:12px;margin:0}
+.jamila-plan small{color:var(--vscode-descriptionForeground);font-size:11px}

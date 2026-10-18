@@ -41,6 +41,7 @@ import { PlanActMode, TogglePlanActModeRequest } from "@shared/proto/state"
 import { VSCodeButton } from "@vscode/webview-ui-toolkit/react"
 import React, { forwardRef, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import DynamicTextArea from "react-textarea-autosize"
+import "./JamilaComposer.css"
 import { useClickAway, useEvent, useWindowSize } from "react-use"
 import styled from "styled-components"
 import JamilaRulesToggleModal from "../jam-rules/JamilaRulesToggleModal"
@@ -72,6 +73,8 @@ interface ChatTextAreaProps {
 	activeQuote: string | null
 	setInputValue: (value: string) => void
 	sendingDisabled: boolean
+	isStreaming?: boolean
+	onStop?: () => void
 	placeholderText: string
 	selectedFiles: string[]
 	selectedImages: string[]
@@ -259,6 +262,8 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 			activeQuote,
 			setInputValue,
 			sendingDisabled,
+			isStreaming = false,
+			onStop,
 			placeholderText,
 			selectedFiles,
 			selectedImages,
@@ -1374,8 +1379,9 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 		}
 
 		return (
-			<div>
+			<div className="jamila-composer">
 				<div
+					className="jamila-composer__entry"
 					style={{
 						padding: "10px 15px",
 						opacity: 1,
@@ -1395,7 +1401,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 								inset: "10px 15px",
 								backgroundColor: "rgba(var(--vscode-errorForeground-rgb), 0.1)",
 								border: "2px solid var(--vscode-errorForeground)",
-								borderRadius: 2,
+								borderRadius: 12,
 								display: "flex",
 								alignItems: "center",
 								justifyContent: "center",
@@ -1420,7 +1426,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 								inset: "10px 15px",
 								backgroundColor: "rgba(var(--vscode-errorForeground-rgb), 0.1)",
 								border: "2px solid var(--vscode-errorForeground)",
-								borderRadius: 2,
+								borderRadius: 12,
 								display: "flex",
 								alignItems: "center",
 								justifyContent: "center",
@@ -1472,7 +1478,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 								position: "absolute",
 								inset: "10px 15px",
 								border: "1px solid var(--vscode-input-border)",
-								borderRadius: 2,
+								borderRadius: 12,
 								pointerEvents: "none",
 								zIndex: 5,
 							}}
@@ -1495,7 +1501,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 							fontFamily: "var(--vscode-font-family)",
 							fontSize: "var(--vscode-editor-font-size)",
 							lineHeight: "var(--vscode-editor-line-height)",
-							borderRadius: 2,
+							borderRadius: 12,
 							borderLeft: 0,
 							borderRight: 0,
 							borderTop: 0,
@@ -1545,7 +1551,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 							backgroundColor: "transparent",
 							color: "var(--vscode-input-foreground)",
 							//border: "1px solid var(--vscode-input-border)",
-							borderRadius: 2,
+							borderRadius: 12,
 							fontFamily: "var(--vscode-font-family)",
 							fontSize: "var(--vscode-editor-font-size)",
 							lineHeight: "var(--vscode-editor-line-height)",
@@ -1629,16 +1635,23 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 									fontSize: 16.5,
 								}}
 							/> */}
-							<div
-								data-testid="send-button"
-								className={`input-icon-button ${sendingDisabled ? "disabled" : ""} codicon codicon-send`}
-								onClick={() => {
-									if (!sendingDisabled) {
-										setIsTextAreaFocused(false)
-										onSend()
-									}
-								}}
-								style={{ fontSize: 15 }}></div>
+							<button
+							type="button"
+							data-testid="send-button"
+							className={`jamila-composer__send${isStreaming ? " is-busy" : ""}`}
+							aria-label={isStreaming ? "Stop generation" : "Send message"}
+							title={isStreaming ? "Stop generation" : "Send message"}
+							disabled={sendingDisabled && !isStreaming}
+							onClick={() => {
+								if (isStreaming) onStop?.()
+								else if (!sendingDisabled) {
+									setIsTextAreaFocused(false)
+									onSend()
+								}
+							}}>
+							<span className="codicon codicon-arrow-up" aria-hidden="true" />
+							<span className="jamila-composer__stop-glyph" aria-hidden="true" />
+						</button>
 						</div>
 					</div>
 				</div>

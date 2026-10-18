@@ -1,0 +1,14 @@
+.jamila-composer{margin:6px 10px 10px;border:1px solid var(--vscode-input-border,var(--vscode-editorGroup-border));border-radius:16px;background:var(--vscode-input-background);color:var(--vscode-input-foreground);box-shadow:0 3px 15px color-mix(in srgb,black 10%,transparent);transition:border-color .2s ease,box-shadow .2s ease;min-width:0}
+.jamila-composer:focus-within{border-color:var(--vscode-focusBorder);box-shadow:0 0 0 1px color-mix(in srgb,var(--vscode-focusBorder) 35%,transparent)}
+.jamila-composer__entry{border-radius:15px;min-width:0}
+.jamila-composer__entry textarea{border-radius:12px}
+.jamila-composer__send{width:29px;height:29px;display:grid;place-items:center;position:relative;background:var(--vscode-button-background);color:var(--vscode-button-foreground);border:0;border-radius:9px;cursor:pointer;transition:transform .2s cubic-bezier(.23,1,.32,1),background-color .2s ease;flex:none}
+.jamila-composer__send:enabled:active{transform:scale(.94)}
+.jamila-composer__send:disabled{opacity:.45;cursor:default}
+.jamila-composer__send:focus-visible{outline:2px solid var(--vscode-focusBorder);outline-offset:3px}
+.jamila-composer__send .codicon{position:absolute;transition:opacity .18s ease,transform .23s ease;font-size:16px}
+.jamila-composer__send .codicon-arrow-up{opacity:1;transform:scale(1) rotate(0)}
+.jamila-composer__stop-glyph{width:10px;height:10px;background:currentColor;border-radius:2px;opacity:0;transform:scale(.5) rotate(-20deg);transition:opacity .18s ease,transform .23s ease}
+.jamila-composer__send.is-busy .codicon-arrow-up{opacity:0;transform:scale(.5) rotate(25deg)}
+.jamila-composer__send.is-busy .jamila-composer__stop-glyph{opacity:1;transform:scale(1) rotate(0)}
+@media(prefers-reduced-motion:reduce){.jamila-composer,.jamila-composer__send,.jamila-composer__send .codicon,.jamila-composer__stop-glyph{transition:none!important}}
