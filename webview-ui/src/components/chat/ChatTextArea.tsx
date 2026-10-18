@@ -1641,7 +1641,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 							className={`jamila-composer__send${isStreaming ? " is-busy" : ""}`}
 							aria-label={isStreaming ? "Stop generation" : "Send message"}
 							title={isStreaming ? "Stop generation" : "Send message"}
-							disabled={sendingDisabled && !isStreaming}
+							disabled={!isStreaming && (sendingDisabled || (!inputValue.trim() && selectedImages.length === 0 && selectedFiles.length === 0))}
 							onClick={() => {
 								if (isStreaming) onStop?.()
 								else if (!sendingDisabled) {
