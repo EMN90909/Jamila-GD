@@ -10,6 +10,25 @@ interface JamilaActivityLineProps {
 }
 
 function activityFor(message: JamilaMessage): string | null {
+ // Only display observed tool metadata, never the model's private reasoning or raw command arguments.
+ if (message.say === "tool" && message.text) {
+  try {
+   const tool = JSON.parse(message.text) as { tool?: string; path?: string }
+   const filename = tool.path?.split(/[\\/]/).filter(Boolean).at(-1)?.slice(0, 58)
+   switch (tool.tool) {
+    case "readFile": return filename ? `Reading ${filename}` : "Reading a project file"
+    case "editedExistingFile": return filename ? `Editing ${filename}` : "Editing a project file"
+    case "newFileCreated": return filename ? `Creating ${filename}` : "Creating a project file"
+    case "searchFiles": return "Searching project files"
+    case "listFilesTopLevel":
+    case "listFilesRecursive": return "Exploring project folders"
+    case "listCodeDefinitionNames": return "Inspecting code definitions"
+    case "webFetch": return "Fetching web documentation"
+   }
+  } catch {
+   // Malformed or partial tool JSON is common during streaming.
+  }
+ }
  if (message.type === "ask") {
   switch (message.ask) {
    case "command": return "Waiting to run a command"
