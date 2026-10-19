@@ -57,7 +57,24 @@ function activityFor(message: JamilaMessage): string | null {
   case "text": return "Writing the response"
   case "tool": return "Working with project files"
   case "command": return "Running a command"
-  case "mcp_server_request_started": return identifyMcpServer(message)?.toLowerCase() === "github" ? "Calling GitHub MCP" : "Calling an MCP server"
+  case "mcp_server_request_started": {
+   const server = identifyMcpServer(message)
+   if (server?.toLowerCase() === "github") return "Calling GitHub MCP"
+   if (server && /(?:godot|noeengine)/i.test(server)) {
+    try {
+     const data = JSON.parse(message.text || "{}") as { toolName?: unknown }
+     const tool = typeof data.toolName === "string" ? data.toolName : ""
+     if (/scene|node|signal/i.test(tool)) return "Godot: updating the scene"
+     if (/script|code|gdscript/i.test(tool)) return "Godot: working on scripts"
+     if (/run|test|play|debug|profil/i.test(tool)) return "Godot: running validation"
+     if (/inspect|read|get_|list_/i.test(tool)) return "Godot: inspecting the project"
+    } catch {
+     // A partial event may not yet have tool metadata.
+    }
+    return "Calling Godot MCP"
+   }
+   return "Calling an MCP server"
+  }
   case "mcp_server_response": return "Processing an MCP response"
   case "browser_action": return "Using the browser"
   case "completion_result": return "Task complete"
