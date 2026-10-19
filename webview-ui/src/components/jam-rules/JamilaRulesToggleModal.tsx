@@ -46,11 +46,11 @@ const JamilaRulesToggleModal: React.FC = () => {
 			FileServiceClient.refreshRules({} as EmptyRequest)
 				.then((response: RefreshedRules) => {
 					// Update state with the response data using all available setters
-					if (response.globalJamilaRulesToggles?.toggles) {
-						setGlobalJamilaRulesToggles(response.globalJamilaRulesToggles.toggles)
+					if (response.globalJamRulesToggles?.toggles) {
+						setGlobalJamilaRulesToggles(response.globalJamRulesToggles.toggles)
 					}
-					if (response.localJamilaRulesToggles?.toggles) {
-						setLocalJamilaRulesToggles(response.localJamilaRulesToggles.toggles)
+					if (response.localJamRulesToggles?.toggles) {
+						setLocalJamilaRulesToggles(response.localJamRulesToggles.toggles)
 					}
 					if (response.localCursorRulesToggles?.toggles) {
 						setLocalCursorRulesToggles(response.localCursorRulesToggles.toggles)
@@ -108,11 +108,11 @@ const JamilaRulesToggleModal: React.FC = () => {
 		)
 			.then((response) => {
 				// Update the local state with the response
-				if (response.globalJamilaRulesToggles?.toggles) {
-					setGlobalJamilaRulesToggles(response.globalJamilaRulesToggles.toggles)
+				if (response.globalJamRulesToggles?.toggles) {
+					setGlobalJamilaRulesToggles(response.globalJamRulesToggles.toggles)
 				}
-				if (response.localJamilaRulesToggles?.toggles) {
-					setLocalJamilaRulesToggles(response.localJamilaRulesToggles.toggles)
+				if (response.localJamRulesToggles?.toggles) {
+					setLocalJamilaRulesToggles(response.localJamRulesToggles.toggles)
 				}
 			})
 			.catch((error) => {
