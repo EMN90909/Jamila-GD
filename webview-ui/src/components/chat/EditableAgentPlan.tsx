@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useId, useMemo, useState } from "react"
 import "./EditableAgentPlan.css"
 
 interface EditableAgentPlanProps {
@@ -15,6 +15,7 @@ export function extractPlanSteps(markdown: string): string[] {
 }
 
 export default function EditableAgentPlan({ response, canEdit, onRequestRevision }: EditableAgentPlanProps) {
+ const editorId = useId()
  const [editing, setEditing] = useState(false)
  const [draft, setDraft] = useState(response)
  const [saving, setSaving] = useState(false)
@@ -57,8 +58,8 @@ export default function EditableAgentPlan({ response, canEdit, onRequestRevision
    )}
    {editing ? (
     <div className="jamila-plan__editor">
-     <label htmlFor="jamila-plan-editor">Edit the proposed plan</label>
-     <textarea id="jamila-plan-editor" value={draft} onChange={(event) => setDraft(event.target.value)} rows={Math.min(14, Math.max(6, draft.split("\n").length))} spellCheck={false} />
+     <label htmlFor={editorId}>Edit the proposed plan</label>
+     <textarea id={editorId} value={draft} onChange={(event) => setDraft(event.target.value)} rows={Math.min(14, Math.max(6, draft.split("\n").length))} spellCheck={false} />
      {error && <p role="alert" className="jamila-plan__error">{error}</p>}
      <div className="jamila-plan__actions">
       <button type="button" onClick={() => { setDraft(response); setEditing(false); setError("") }} disabled={saving}>Cancel</button>
