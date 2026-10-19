@@ -43,7 +43,7 @@ describe("Jamila agent activity", () => {
   } as JamilaMessage
   expect(getJamilaActivity([godot], true, false).status).toBe("Godot: updating the scene")
   const inspection = { ...godot, text: JSON.stringify({ serverName: "godot", toolName: "godot_inspection_get_scene_tree" }) }
-  expect(getJamilaActivity([inspection], true, false).status).toBe("Godot: updating the scene")
+  expect(getJamilaActivity([inspection], true, false).status).toBe("Godot: inspecting the project")
  })
  it("collapses repeated events and limits the trace", () => {
   const activity = getJamilaActivity(
