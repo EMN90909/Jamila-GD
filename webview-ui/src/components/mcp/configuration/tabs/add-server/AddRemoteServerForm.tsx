@@ -7,6 +7,7 @@ import { EmptyRequest } from "@shared/proto/common"
 import { AddRemoteMcpServerRequest } from "@shared/proto/mcp"
 import { VSCodeButton, VSCodeLink, VSCodeTextField } from "@vscode/webview-ui-toolkit/react"
 import { useState } from "react"
+import GitHubMcpQuickStart from "./GitHubMcpQuickStart"
 
 const AddRemoteServerForm = ({ onServerAdded }: { onServerAdded: () => void }) => {
 	const [serverName, setServerName] = useState("")
@@ -66,6 +67,7 @@ const AddRemoteServerForm = ({ onServerAdded }: { onServerAdded: () => void }) =
 
 	return (
 		<div className="p-4 px-5">
+			<GitHubMcpQuickStart />
 			<div className="text-[var(--vscode-foreground)] mb-2">
 				Add a remote MCP server by providing a name and its URL endpoint. Learn more{" "}
 				<VSCodeLink href={LINKS.DOCUMENTATION.REMOTE_MCP_SERVER_DOCS} style={{ display: "inline" }}>
