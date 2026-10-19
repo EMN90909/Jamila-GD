@@ -1491,7 +1491,7 @@ export class ToolExecutor {
 						}
 
 						// now execute the tool
-						await this.say("mcp_server_request_started") // same as browser_action_result
+						await this.say("mcp_server_request_started", JSON.stringify({ serverName: server_name, toolName: tool_name }))
 
 						// Check for any pending notifications before the tool call
 						const notificationsBefore = this.mcpHub.getPendingNotifications()
