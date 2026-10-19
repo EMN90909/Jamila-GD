@@ -1179,7 +1179,7 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 							initialTopMostItemIndex={groupedMessages.length - 1}
 						/>
 					</div>
-					<JamilaActivityLine messages={modifiedMessages} working={isStreaming && !didClickCancel} waitingForApproval={enableButtons && Boolean(jamAsk)} taskKey={task.ts} />
+					<JamilaActivityLine messages={modifiedMessages} working={isStreaming && !didClickCancel} waitingForApproval={enableButtons && (jamAsk === "command" || jamAsk === "tool" || jamAsk === "use_mcp_server" || jamAsk === "browser_action_launch")} taskKey={task.ts} />
 					<AutoApproveBar />
 					{showScrollToBottom ? (
 						<div
