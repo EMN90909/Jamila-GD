@@ -6,6 +6,8 @@ on:
     paths:
       - "webview-ui/**"
       - "src/services/mcp/**"
+      - "src/core/controller/file/**"
+      - "proto/**"
       - ".github/workflows/jamila-agent-ui-checks.yml"
   workflow_dispatch:
 
@@ -36,6 +38,8 @@ jobs:
         working-directory: webview-ui
       - name: Check extension TypeScript
         run: npm run check-types
+      - name: Test MCP credential placeholders
+        run: npm run test:unit -- --grep "MCP environment placeholders"
       - name: Build webview
         run: npm run build
         working-directory: webview-ui
