@@ -40,6 +40,7 @@ import { ExtensionMessage } from "@shared/ExtensionMessage"
 import { DEFAULT_REQUEST_TIMEOUT_MS } from "./constants"
 import { Transport, McpConnection, McpTransportType, McpServerConfig } from "./types"
 import { BaseConfigSchema, ServerConfigSchema, McpSettingsSchema } from "./schemas"
+import { resolveMcpEnvironmentMap } from "./environment"
 import { getHostBridgeProvider } from "@/hosts/host-providers"
 
 export class McpHub {
@@ -216,7 +217,7 @@ export class McpHub {
 						env: {
 							// ...(config.env ? await injectEnv(config.env) : {}), // Commented out as injectEnv is not found
 							...getDefaultEnvironment(),
-							...(config.env || {}), // Use config.env directly or an empty object
+							...(resolveMcpEnvironmentMap(config.env) || {}), // Expand only at transport setup
 						},
 						stderr: "pipe",
 					})
@@ -268,7 +269,7 @@ export class McpHub {
 				case "sse": {
 					const sseOptions = {
 						requestInit: {
-							headers: config.headers,
+							headers: resolveMcpEnvironmentMap(config.headers),
 						},
 					}
 					const reconnectingEventSourceOptions = {
@@ -295,7 +296,7 @@ export class McpHub {
 				case "streamableHttp": {
 					transport = new StreamableHTTPClientTransport(new URL(config.url), {
 						requestInit: {
-							headers: config.headers,
+							headers: resolveMcpEnvironmentMap(config.headers),
 						},
 					})
 					transport.onerror = async (error) => {
