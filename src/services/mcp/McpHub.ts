@@ -400,14 +400,28 @@ export class McpHub {
 				})
 				console.log(`[MCP Debug] Successfully set notifications/message handler for ${name}`)
 
+				// Godot MCP servers dynamically enable scene_edit, gameplay and QA toolsets.
+				// Refresh only the server that announced a changed tool list, and publish
+				// it to the chat UI so the next model turn sees the new input schemas.
+				const ToolsChangedSchema = z.object({ method: z.literal("notifications/tools/list_changed") })
+				connection.client.setNotificationHandler(ToolsChangedSchema as any, async () => {
+					if (this.connections.find((conn) => conn.server.name === name) !== connection) return
+					connection.server.tools = await this.fetchToolsList(name)
+					await this.notifyWebviewOfServerChanges()
+				})
+
+				const ResourcesChangedSchema = z.object({ method: z.literal("notifications/resources/list_changed") })
+				connection.client.setNotificationHandler(ResourcesChangedSchema as any, async () => {
+					if (this.connections.find((conn) => conn.server.name === name) !== connection) return
+					connection.server.resources = await this.fetchResourcesList(name)
+					connection.server.resourceTemplates = await this.fetchResourceTemplatesList(name)
+					await this.notifyWebviewOfServerChanges()
+				})
+
 				// Also set a fallback handler for any other notification types
 				connection.client.fallbackNotificationHandler = async (notification: any) => {
-					console.log(`[MCP Fallback Notification] ${name}:`, JSON.stringify(notification, null, 2))
-
-					// Show in VS Code for visibility
-					vscode.window.showInformationMessage(
-						`MCP ${name}: ${notification.method || "unknown"} - ${JSON.stringify(notification.params || {})}`,
-					)
+					// Do not show untrusted MCP payloads or credentials in desktop popups.
+					console.debug(`[MCP Notification] ${name}: ${String(notification.method || "unknown")}`)
 				}
 				console.log(`[MCP Debug] Successfully set fallback notification handler for ${name}`)
 			} catch (error) {
