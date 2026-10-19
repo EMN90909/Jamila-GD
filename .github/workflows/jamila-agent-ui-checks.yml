@@ -7,6 +7,8 @@ on:
       - "webview-ui/**"
       - "src/services/mcp/**"
       - "src/core/controller/file/**"
+      - "src/core/agents/**"
+      - "src/core/task/**"
       - "proto/**"
       - ".github/workflows/jamila-agent-ui-checks.yml"
   workflow_dispatch:
@@ -38,8 +40,12 @@ jobs:
         working-directory: webview-ui
       - name: Check extension TypeScript
         run: npm run check-types
-      - name: Test MCP credential placeholders
-        run: npm run test:unit -- --grep "MCP environment placeholders"
+      - name: Test Godot agent routing and MCP credential references
+        run: |
+          TS_NODE_PROJECT=./tsconfig.unit-test.json npx mocha --no-config --no-package \
+            --require ts-node/register --require tsconfig-paths/register \
+            src/services/mcp/__tests__/environment.test.ts \
+            src/core/agents/__tests__/godotAgents.test.ts
       - name: Build webview
         run: npm run build
         working-directory: webview-ui
