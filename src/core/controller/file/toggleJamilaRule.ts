@@ -38,7 +38,7 @@ export async function toggleJamilaRule(controller: Controller, request: ToggleJa
 	const localToggles = ((await getWorkspaceState(controller.context, "localJamilaRulesToggles")) as AppJamilaRulesToggles) || {}
 
 	return ToggleJamilaRules.create({
-		globalJamilaRulesToggles: { toggles: globalToggles },
-		localJamilaRulesToggles: { toggles: localToggles },
+		globalJamRulesToggles: { toggles: globalToggles },
+		localJamRulesToggles: { toggles: localToggles },
 	})
 }
