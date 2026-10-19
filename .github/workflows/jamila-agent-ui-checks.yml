@@ -1,0 +1,44 @@
+name: Jamila GitHub MCP and agent UI checks
+
+on:
+  push:
+    branches: [Main]
+    paths:
+      - "webview-ui/**"
+      - "src/services/mcp/**"
+      - ".github/workflows/jamila-agent-ui-checks.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jamila-agent-ui-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            webview-ui/package-lock.json
+      - name: Install extension dependencies
+        run: npm ci
+      - name: Install webview dependencies
+        run: npm ci
+        working-directory: webview-ui
+      - name: Check extension TypeScript
+        run: npm run check-types
+      - name: Build webview
+        run: npm run build
+        working-directory: webview-ui
+      - name: Test webview components
+        run: npm test
+        working-directory: webview-ui
