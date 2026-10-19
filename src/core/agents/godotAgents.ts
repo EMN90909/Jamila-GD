@@ -1,5 +1,5 @@
 import * as path from "node:path"
-import { access } from "node:fs/promises"
+import { access, readdir } from "node:fs/promises"
 import type { McpServer } from "@shared/mcp"
 
 export type GodotAgentRole = "planner" | "scene" | "gameplay" | "integration" | "qa"
@@ -68,6 +68,32 @@ ${GODOT_AGENT_STAGES.map((stage, i) => `${i + 1}. ${stage.role.toUpperCase()} ag
 `
 }
 
+/**
+ * Discover game-development skills without loading their untrusted contents
+ * into the system prompt. The agent must read each selected SKILL.md first.
+ */
+export async function listGameSkillPaths(cwd: string): Promise<string[]> {
+	const roots = [".agents/skills", ".claude/skills", ".github/skills", "skills"]
+	const found: string[] = []
+	for (const root of roots) {
+		try {
+			for (const entry of await readdir(path.join(cwd, root), { withFileTypes: true })) {
+				if (!entry.isDirectory() || found.length >= 20) continue
+				const relative = path.join(root, entry.name, "SKILL.md")
+				try {
+					await access(path.join(cwd, relative))
+					found.push(relative.split(path.sep).join("/"))
+				} catch {
+					// Ignore entries with no skill manifest.
+				}
+			}
+		} catch {
+			// Skills are optional.
+		}
+	}
+	return found
+}
+
 export async function buildGodotAgentGuidance(cwd: string, servers: McpServer[]): Promise<string> {
 	let isGodotProject = false
 	try {
@@ -76,5 +102,10 @@ export async function buildGodotAgentGuidance(cwd: string, servers: McpServer[])
 	} catch {
 		// Non-Godot workspaces should keep the general-purpose system prompt.
 	}
-	return getGameAgentGuide(servers, isGodotProject)
+	const guide = getGameAgentGuide(servers, isGodotProject)
+	if (!guide) return ""
+	const skills = await listGameSkillPaths(cwd)
+	return skills.length
+		? guide + "\\n### Available project skills (read only when relevant)\\n" + skills.map((skill) => "- " + skill).join("\\n") + "\\n"
+		: guide
 }
