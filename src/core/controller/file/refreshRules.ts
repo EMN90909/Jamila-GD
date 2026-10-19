@@ -19,8 +19,8 @@ export async function refreshRules(controller: Controller, _request: EmptyReques
 		const { localWorkflowToggles, globalWorkflowToggles } = await refreshWorkflowToggles(controller.context, cwd)
 
 		return RefreshedRules.create({
-			globalJamilaRulesToggles: { toggles: globalToggles },
-			localJamilaRulesToggles: { toggles: localToggles },
+			globalJamRulesToggles: { toggles: globalToggles },
+			localJamRulesToggles: { toggles: localToggles },
 			localCursorRulesToggles: { toggles: cursorLocalToggles },
 			localWindsurfRulesToggles: { toggles: windsurfLocalToggles },
 			localWorkflowToggles: { toggles: localWorkflowToggles },
