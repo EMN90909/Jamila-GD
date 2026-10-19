@@ -9,6 +9,17 @@ interface JamilaActivityLineProps {
  taskKey: number
 }
 
+function identifyMcpServer(message: JamilaMessage): string | null {
+ if (!message.text) return null
+ try {
+  const data = JSON.parse(message.text) as { serverName?: unknown; server_name?: unknown }
+  const server = typeof data.serverName === "string" ? data.serverName : data.server_name
+  return typeof server === "string" && /^[a-z0-9_-]{1,64}$/i.test(server) ? server : null
+ } catch {
+  return null
+ }
+}
+
 function activityFor(message: JamilaMessage): string | null {
  // Only display observed tool metadata, never the model's private reasoning or raw command arguments.
  if (message.say === "tool" && message.text) {
@@ -33,7 +44,7 @@ function activityFor(message: JamilaMessage): string | null {
   switch (message.ask) {
    case "command": return "Waiting to run a command"
    case "tool": return "Waiting for file or workspace approval"
-   case "use_mcp_server": return "Waiting for MCP permission"
+   case "use_mcp_server": return identifyMcpServer(message)?.toLowerCase() === "github" ? "Waiting for GitHub MCP approval" : "Waiting for MCP permission"
    case "browser_action_launch": return "Waiting for browser approval"
    case "plan_mode_respond": return "Plan ready for review"
    case "followup": return "Waiting for your answer"
@@ -46,7 +57,7 @@ function activityFor(message: JamilaMessage): string | null {
   case "text": return "Writing the response"
   case "tool": return "Working with project files"
   case "command": return "Running a command"
-  case "mcp_server_request_started": return "Calling an MCP server"
+  case "mcp_server_request_started": return identifyMcpServer(message)?.toLowerCase() === "github" ? "Calling GitHub MCP" : "Calling an MCP server"
   case "mcp_server_response": return "Processing an MCP response"
   case "browser_action": return "Using the browser"
   case "completion_result": return "Task complete"
