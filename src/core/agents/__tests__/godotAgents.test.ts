@@ -1,6 +1,7 @@
 import { describe, it } from "mocha"
 import { expect } from "chai"
 import type { McpServer } from "@shared/mcp"
+import { McpSettingsSchema } from "@services/mcp/schemas"
 import { GODOT_AGENT_STAGES, getGameAgentGuide, isGodotMcpServer } from "../godotAgents"
 
 function server(name: string, status: McpServer["status"], tools: string[] = []): McpServer {
@@ -29,6 +30,19 @@ describe("Jamila Godot agent workflows", () => {
 		const guide = getGameAgentGuide([server("godot", "disconnected")], true)
 		expect(guide).to.contain("No connected Godot MCP server")
 		expect(getGameAgentGuide([], false)).to.equal("")
+	})
+	it("accepts multiple named MCP backends in the same settings file", () => {
+		const settings = McpSettingsSchema.safeParse({
+			mcpServers: {
+				godot: { type: "stdio", command: "uvx", args: ["godot-editor-mcp"], autoApprove: [] },
+				github: {
+					type: "streamableHttp",
+					url: "https://api.githubcopilot.com/mcp/",
+					headers: { Authorization: "Bearer ${env:GITHUB_PERSONAL_ACCESS_TOKEN}" },
+				},
+			},
+		})
+		expect(settings.success).to.equal(true)
 	})
 	it("includes explicit specialist handoffs and QA", () => {
 		expect(GODOT_AGENT_STAGES.map((stage) => stage.role)).to.deep.equal([
