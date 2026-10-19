@@ -106,6 +106,6 @@ export async function buildGodotAgentGuidance(cwd: string, servers: McpServer[])
 	if (!guide) return ""
 	const skills = await listGameSkillPaths(cwd)
 	return skills.length
-		? guide + "\\n### Available project skills (read only when relevant)\\n" + skills.map((skill) => "- " + skill).join("\\n") + "\\n"
+		? guide + "\n### Available project skills (read only when relevant)\n" + skills.map((skill) => "- " + skill).join("\n") + "\n"
 		: guide
 }
