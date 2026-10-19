@@ -64,10 +64,10 @@ function activityFor(message: JamilaMessage): string | null {
     try {
      const data = JSON.parse(message.text || "{}") as { toolName?: unknown }
      const tool = typeof data.toolName === "string" ? data.toolName : ""
-     if (/scene|node|signal/i.test(tool)) return "Godot: updating the scene"
-     if (/script|code|gdscript/i.test(tool)) return "Godot: working on scripts"
-     if (/run|test|play|debug|profil/i.test(tool)) return "Godot: running validation"
      if (/inspect|read|get_|list_/i.test(tool)) return "Godot: inspecting the project"
+     if (/run|test|play|debug|profil/i.test(tool)) return "Godot: running validation"
+     if (/script|code|gdscript/i.test(tool)) return "Godot: working on scripts"
+     if (/scene|node|signal/i.test(tool)) return "Godot: updating the scene"
     } catch {
      // A partial event may not yet have tool metadata.
     }
