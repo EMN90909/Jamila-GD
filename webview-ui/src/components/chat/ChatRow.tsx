@@ -63,7 +63,7 @@ interface ChatRowProps {
 	isLast: boolean
 	onHeightChange: (isTaller: boolean) => void
 	inputValue?: string
-	sendMessageFromChatRow?: (text: string, images: string[], files: string[]) => void
+	sendMessageFromChatRow?: (text: string, images: string[], files: string[]) => Promise<void>
 	onSetQuote: (text: string) => void
 }
 
@@ -1679,7 +1679,7 @@ export const ChatRowContent = ({
 							<EditableAgentPlan
 								response={response || ""}
 								canEdit={Boolean(isLast && lastModifiedMessage?.ask === "plan_mode_respond")}
-								onRequestRevision={sendMessageFromChatRow ? (text) => sendMessageFromChatRow(text, [], []) : undefined}
+								onRequestRevision={sendMessageFromChatRow ? async (text) => { await sendMessageFromChatRow(text, [], []) } : undefined}
 							/>
 							<Markdown markdown={response} />
 							<OptionsButtons
