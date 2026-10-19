@@ -36,6 +36,15 @@ describe("Jamila agent activity", () => {
   expect(getJamilaActivity([{ ...github, text: JSON.stringify({ serverName: "local-tools" }) }], false, false).trace)
    .toEqual(["Waiting for MCP permission"])
  })
+ it("shows scene editing status only when a Godot tool event was recorded", () => {
+  const godot = {
+   type: "say", say: "mcp_server_request_started",
+   text: JSON.stringify({ serverName: "godot", toolName: "godot_scene_add_node" }), ts: Date.now(),
+  } as JamilaMessage
+  expect(getJamilaActivity([godot], true, false).status).toBe("Godot: updating the scene")
+  const inspection = { ...godot, text: JSON.stringify({ serverName: "godot", toolName: "godot_inspection_get_scene_tree" }) }
+  expect(getJamilaActivity([inspection], true, false).status).toBe("Godot: updating the scene")
+ })
  it("collapses repeated events and limits the trace", () => {
   const activity = getJamilaActivity(
    [say("text"), say("text"), say("reasoning"), say("tool"), say("command"), say("api_req_started"), say("text")],
