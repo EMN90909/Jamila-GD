@@ -150,7 +150,7 @@ jobs:
         needs: test
         runs-on: ubuntu-latest
         # Only run on PRs to main branch
-        if: github.event_name == 'pull_request' && github.base_ref == 'main'
+        if: github.event_name == 'pull_request' && github.base_ref == 'Main'
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
