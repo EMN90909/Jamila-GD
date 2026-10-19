@@ -27,6 +27,15 @@ describe("Jamila agent activity", () => {
   expect(activity.status).toBe("Waiting for your approval")
   expect(activity.trace).toEqual(["Waiting for MCP permission"])
  })
+ it("labels only observed GitHub MCP activity", () => {
+  const github = {
+   type: "ask", ask: "use_mcp_server",
+   text: JSON.stringify({ serverName: "github", type: "use_mcp_tool" }), ts: Date.now(),
+  } as JamilaMessage
+  expect(getJamilaActivity([github], false, false).trace).toEqual(["Waiting for GitHub MCP approval"])
+  expect(getJamilaActivity([{ ...github, text: JSON.stringify({ serverName: "local-tools" }) }], false, false).trace)
+   .toEqual(["Waiting for MCP permission"])
+ })
  it("collapses repeated events and limits the trace", () => {
   const activity = getJamilaActivity(
    [say("text"), say("text"), say("reasoning"), say("tool"), say("command"), say("api_req_started"), say("text")],
