@@ -456,9 +456,22 @@ export class McpHub {
 				throw new Error(`No connection found for server: ${serverName}`)
 			}
 
-			const response = await connection.client.request({ method: "tools/list" }, ListToolsResultSchema, {
-				timeout: DEFAULT_REQUEST_TIMEOUT_MS,
-			})
+			// Some Godot MCP servers expose large, dynamically gated catalogs.
+			// Fetch all pages rather than silently dropping scene/edit/test tools.
+			const discoveredTools: McpTool[] = []
+			const seenCursors = new Set<string>()
+			let cursor: string | undefined
+			for (let page = 0; page < 32; page++) {
+				const response = await connection.client.request(
+					{ method: "tools/list", ...(cursor ? { params: { cursor } } : {}) },
+					ListToolsResultSchema,
+					{ timeout: DEFAULT_REQUEST_TIMEOUT_MS },
+				)
+				discoveredTools.push(...(response.tools ?? []))
+				if (!response.nextCursor || seenCursors.has(response.nextCursor) || discoveredTools.length >= 1500) break
+				seenCursors.add(response.nextCursor)
+				cursor = response.nextCursor
+			}
 
 			// Get autoApprove settings
 			const settingsPath = await this.getMcpSettingsFilePath()
@@ -467,7 +480,7 @@ export class McpHub {
 			const autoApproveConfig = config.mcpServers[serverName]?.autoApprove || []
 
 			// Mark tools as always allowed based on settings
-			const tools = (response?.tools || []).map((tool) => ({
+			const tools = discoveredTools.map((tool) => ({
 				...tool,
 				autoApprove: autoApproveConfig.includes(tool.name),
 			}))
@@ -809,6 +822,16 @@ export class McpHub {
 
 		if (connection.server.disabled) {
 			throw new Error(`Server "${serverName}" is disabled and cannot be used`)
+		}
+		if (connection.server.status !== "connected") {
+			throw new Error(`MCP server "${serverName}" is not connected`)
+		}
+		// Refresh once if the agent refers to a recently enabled Godot toolset.
+		if (!connection.server.tools?.some((tool) => tool.name === toolName)) {
+			connection.server.tools = await this.fetchToolsList(serverName)
+		}
+		if (!connection.server.tools?.some((tool) => tool.name === toolName)) {
+			throw new Error(`Tool "${toolName}" is not advertised by MCP server "${serverName}". Check the server's enabled toolsets.`)
 		}
 
 		let timeout = secondsToMs(DEFAULT_MCP_TIMEOUT_SECONDS) // sdk expects ms
