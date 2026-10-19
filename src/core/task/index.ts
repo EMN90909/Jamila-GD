@@ -95,6 +95,7 @@ import { MessageStateHandler } from "./message-state"
 import { formatErrorWithStatusCode, updateApiReqMsg } from "./utils"
 import { TaskState } from "./TaskState"
 import { ToolExecutor } from "./ToolExecutor"
+import { buildGodotAgentGuidance } from "@core/agents/godotAgents"
 
 export const USE_EXPERIMENTAL_CLAUDE4_FEATURES = false
 
@@ -1598,6 +1599,8 @@ export class Task {
 
 		const isNextGenModel = isClaude4ModelFamily(this.api) || isGemini2dot5ModelFamily(this.api)
 		let systemPrompt = await SYSTEM_PROMPT(cwd, supportsBrowserUse, this.mcpHub, this.browserSettings, isNextGenModel)
+		// Inject MCP-aware Godot specialist passes only for a Godot project or connected editor.
+		systemPrompt += await buildGodotAgentGuidance(cwd, this.mcpHub.getServers())
 
 		await this.migratePreferredLanguageToolSetting()
 		const preferredLanguage = getLanguageKey(this.chatSettings.preferredLanguage as LanguageDisplay)
